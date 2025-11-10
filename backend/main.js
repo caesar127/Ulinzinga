@@ -20,6 +20,7 @@ app.use(
 import authRoutes from "./src/features/auth/auth.routes.js";
 import userRoutes from "./src/features/users/users.routes.js";
 import eventsRoutes from "./src/features/events/events.routes.js";
+import categoryRoutes from "./src/features/category/category.routes.js";
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -52,6 +53,7 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/events", eventsRoutes);
+app.use("/api/categories", categoryRoutes);
 
 app.get("/", (req, res) => {
   const networkInterfaces = os.networkInterfaces();
