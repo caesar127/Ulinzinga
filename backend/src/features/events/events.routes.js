@@ -11,6 +11,8 @@ import {
   getUpcomingEvents,
   getPastEvents,
   getEventsByMerchant,
+  getRecommendedEvents,
+  getTrendingEvents,
 } from "./events.controller.js";
 
 const router = express.Router();
@@ -20,6 +22,8 @@ router.get("/past", getPastEvents);
 router.get("/id/:id", getEventById);
 router.get("/slug/:slug", getEventBySlug);
 router.get("/upcoming", getUpcomingEvents);
+router.get("/trending", getTrendingEvents);
+router.get("/recommended", getRecommendedEvents);
 router.get("/merchant/:merchantName", getEventsByMerchant);
 
 router.post("/", createEvent);
