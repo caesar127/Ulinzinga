@@ -1,14 +1,22 @@
 import express from "express";
-import userController from "./users.controller.js";
-import { authenticateToken, requireAdmin } from "../../shared/middleware/auth.js";
+import {
+  createUser,
+  getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  updateUserProfile,
+  updateUserInterests,
+} from "./users.controller.js";
 
 const router = express.Router();
 
-router.use(authenticateToken);
-
-router.get("/", requireAdmin, userController.getAllUsers);
-router.get("/:id", userController.getUserById);
-router.put("/:id", userController.updateUser);
-router.delete("/:id", userController.deleteUser);
+router.post("/", createUser);
+router.get("/", getUsers);
+router.get("/:id", getUserById);
+router.put("/:id", updateUser);
+router.put("/:id/profile", updateUserProfile);
+router.put("/:id/interests", updateUserInterests);
+router.delete("/:id", deleteUser);
 
 export default router;
