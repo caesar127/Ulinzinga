@@ -2,7 +2,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 import EventCategory from "./category.model.js";
 
-dotenv.config();
+dotenv.config({quiet: true});
 
 const PAYCHANGU_API_BASE = "https://dashboard.paychangu.com/mobile/api/public";
 const PAYCHANGU_E_API_KEY = process.env.PAYCHANGU_E_API_KEY;
