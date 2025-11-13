@@ -63,6 +63,7 @@ export const syncEventsFromPayChangu = async () => {
             symbol: apiEvent.balance?.symbol || "$",
           },
           is_active: apiEvent.is_active !== false,
+          is_past: apiEvent.is_past !== false,
         },
         { upsert: true, new: true }
       );
