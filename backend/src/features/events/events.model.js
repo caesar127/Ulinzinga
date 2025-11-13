@@ -75,7 +75,6 @@ const EventSchema = new mongoose.Schema(
       enum: ["draft", "published", "cancelled"],
       default: "published",
     },
-    price: { type: Number, default: 0 },
   },
   {
     timestamps: true,
