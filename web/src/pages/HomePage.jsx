@@ -126,7 +126,7 @@ function HomePage() {
           <h1 className="text-xl md:text-xl">
             Turn Your Savings into Experiences!
           </h1>
-          <p className="text-base text-[#949494] max-w-xl">
+          <p className="text-base text-[#949494] font-[300] max-w-xl">
             Start saving for the events you can’t wait for. Your wallet makes it
             easy to plan, and enjoy every moment.
           </p>
