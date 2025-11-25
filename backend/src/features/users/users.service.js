@@ -1,12 +1,12 @@
 import User from "./users.model.js";
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 
 export const createUserService = async (userData) => {
-  const existing = await User.findOne({
+  const exists = await User.findOne({
     $or: [{ email: userData.email }, { username: userData.username }],
   });
-  if (existing)
-    throw new Error("User with this email or username already exists");
+  if (exists) throw new Error("User with this email or username already exists");
 
   const hashedPassword = await bcrypt.hash(userData.password, 10);
 
@@ -24,12 +24,16 @@ export const getUsersService = async (role, query = {}) => {
     filter.$or = [
       { username: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
+      { "profile.name": { $regex: search, $options: "i" } },
     ];
   }
 
   const skip = (page - 1) * limit;
   const total = await User.countDocuments(filter);
-  const users = await User.find(filter).skip(skip).limit(parseInt(limit));
+  const users = await User.find(filter)
+    .skip(skip)
+    .limit(parseInt(limit))
+    .select("-password");
 
   return {
     users,
@@ -40,7 +44,9 @@ export const getUsersService = async (role, query = {}) => {
 };
 
 export const getUserByIdService = async (id) => {
-  const user = await User.findById(id);
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new Error("Invalid user ID");
+
+  const user = await User.findById(id).select("-password").populate("interests");
   if (!user) throw new Error("User not found");
   return user;
 };
@@ -53,40 +59,44 @@ export const updateUserService = async (id, updateData) => {
   const user = await User.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
-  });
+  }).select("-password");
+
   if (!user) throw new Error("User not found");
   return user;
 };
 
 export const updateUserProfileService = async (userId, updateData) => {
-  // Prevent role or password changes here unless explicitly handled
-  const restrictedFields = ["role", "password", "is_active"];
-  restrictedFields.forEach((field) => delete updateData[field]);
+  const restricted = ["role", "password", "is_active"];
+  restricted.forEach((field) => delete updateData[field]);
 
-  const user = await User.findByIdAndUpdate(userId, updateData, {
-    new: true,
-    runValidators: true,
-  });
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: updateData },
+    { new: true, runValidators: true }
+  ).select("-password");
 
   if (!user) throw new Error("User not found");
   return user;
 };
 
 export const updateUserInterestsService = async (userId, interests) => {
-  if (!Array.isArray(interests))
-    throw new Error("Interests must be an array of strings");
+  if (!Array.isArray(interests)) throw new Error("Interests must be an array");
+
+  const objectIds = interests.map((id) => new mongoose.Types.ObjectId(id));
 
   const user = await User.findByIdAndUpdate(
     userId,
-    { interests },
+    { interests: objectIds },
     { new: true, runValidators: true }
-  );
+  ).populate("interests");
 
   if (!user) throw new Error("User not found");
   return user;
 };
 
 export const deleteUserService = async (id) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new Error("Invalid user ID");
+
   const user = await User.findByIdAndDelete(id);
   if (!user) throw new Error("User not found");
   return user;
