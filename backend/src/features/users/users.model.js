@@ -1,25 +1,21 @@
 import mongoose from "mongoose";
+import WalletSchema from "../wallet/wallet.model.js";
+const { Schema, model } = mongoose;
 
-const GeoSchema = new mongoose.Schema({
-  type: {
-    type: String,
-    enum: ["Point"],
-    default: "Point",
-  },
-  coordinates: {
-    type: [Number], // [lng, lat]
-    required: true,
-  },
+const GeoSchema = new Schema({
+  type: { type: String, enum: ["Point"], default: "Point" },
+  coordinates: { type: [Number], required: true },
 });
 
-const UserSchema = new mongoose.Schema(
+const ProfileSchema = new Schema({
+  phone: String,
+  picture: String,
+  bio: String,
+});
+
+const UserSchema = new Schema(
   {
-    username: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
+    username: { type: String, unique: true, trim: true },
     email: {
       type: String,
       required: true,
@@ -27,54 +23,28 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    password: {
+    password: { type: String, select: false },
+    authProvider: {
       type: String,
-      required: true,
-      select: false,
+      enum: ["paychangu", "local", "google"],
+      default: "local",
     },
+    name: String,
     role: {
       type: String,
-      enum: ["user", "admin", "organizer", "vendor"], // added vendor
+      enum: ["user", "admin", "organizer", "vendor"],
       default: "user",
     },
-    interests: {
-      type: [String],
-      default: [],
-    },
-    location: {
-      type: GeoSchema,
-      index: "2dsphere",
-    },
-    favorites: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Event",
-      },
-    ],
-    tickets: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Event",
-      },
-    ],
-    is_active: {
-      type: Boolean,
-      default: true,
-    },
-    lastLogin: {
-      type: Date,
-    },
-    views: {
-      type: Number,
-      default: 0,
-    },
-    notifications: [
-      {
-        type: String,
-      },
-    ],
+    profile: ProfileSchema,
+    location: { type: GeoSchema, index: "2dsphere" },
+    wallet: WalletSchema,
+    interests: [{ type: Schema.Types.ObjectId, ref: "EventCategory" }],
+    isPrivate: { type: Boolean, default: false },
+    lastLogin: Date,
+    views: { type: Number, default: 0 },
+    is_active: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("User", UserSchema);
+export default model("User", UserSchema);
