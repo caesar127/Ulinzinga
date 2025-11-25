@@ -19,7 +19,7 @@ export const createUser = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const { role } = req.query; // optional: "vendor", "admin", etc.
+    const { role } = req.query;
     const result = await getUsersService(role, req.query);
     res.json(result);
   } catch (err) {
@@ -36,6 +36,16 @@ export const getUserById = async (req, res) => {
   }
 };
 
+export const getCurrentUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await getUserByIdService(userId);
+    res.json(user);
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+};
+
 export const updateUser = async (req, res) => {
   try {
     const user = await updateUserService(req.params.id, req.body);
@@ -45,7 +55,6 @@ export const updateUser = async (req, res) => {
   }
 };
 
-// Update profile info (username, email, location, etc.)
 export const updateUserProfile = async (req, res) => {
   try {
     const user = await updateUserProfileService(req.params.id, req.body);
@@ -55,7 +64,6 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// Update user interests
 export const updateUserInterests = async (req, res) => {
   try {
     const { interests } = req.body;
