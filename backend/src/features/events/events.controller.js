@@ -1,136 +1,84 @@
 import {
-  createEventService,
   getAllEventsService,
   getEventByIdService,
-  getEventBySlugService,
-  updateEventService,
-  deleteEventService,
-  softDeleteEventService,
-  restoreEventService,
-  getUpcomingEventsService,
-  getPastEventsService,
-  getEventsByMerchantService,
-  getRecommendedEventsService,
-  getTrendingEventsService,
+  purchaseTicket,
 } from "./events.service.js";
-
-export const createEvent = async (req, res) => {
-  try {
-    const event = await createEventService(req.body);
-    res.status(201).json({ message: "Event created successfully", event });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
 
 export const getAllEvents = async (req, res) => {
   try {
-    const result = await getAllEventsService(req.query);
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const queryParams = req.query;
+    const data = await getAllEventsService(queryParams);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Events fetched successfully",
+      data,
+    });
+  } catch (error) {
+    return res.status(error.response?.status || 500).json({
+      status: "error",
+      message: "Failed to fetch events",
+      error: error.response?.data || error.message,
+    });
   }
 };
 
 export const getEventById = async (req, res) => {
   try {
-    const event = await getEventByIdService(req.params.id);
-    res.json({ event });
-  } catch (err) {
-    res.status(404).json({ error: err.message });
+    const { id } = req.params;
+    const data = await getEventByIdService(id);
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return res.status(error.response?.status || 500).json({
+      status: "error",
+      message: "Failed to fetch event",
+      error: error.response?.data || error.message,
+    });
   }
 };
 
-export const getEventBySlug = async (req, res) => {
+export const initiatePurchase = async (req, res) => {
   try {
-    const event = await getEventBySlugService(req.params.slug);
-    res.json({ event });
-  } catch (err) {
-    res.status(404).json({ error: err.message });
-  }
-};
+    const { eventSlug } = req.params;
+    const {
+      package_id,
+      name,
+      email,
+      quantity,
+      coupon_code,
+      redirect_url,
+      cancel_url,
+    } = req.body;
 
-export const updateEvent = async (req, res) => {
-  try {
-    const event = await updateEventService(req.params.id, req.body);
-    res.json({ message: "Event updated successfully", event });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
+    if (!package_id || !name || !email || !quantity) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
+    }
 
-export const deleteEvent = async (req, res) => {
-  try {
-    await deleteEventService(req.params.id);
-    res.json({ message: "Event deleted successfully" });
-  } catch (err) {
-    res.status(404).json({ error: err.message });
-  }
-};
+    const purchaseData = {
+      eventSlug,
+      package_id,
+      name,
+      email,
+      quantity,
+      coupon_code,
+      redirect_url,
+      cancel_url,
+    };
 
-export const softDeleteEvent = async (req, res) => {
-  try {
-    const event = await softDeleteEventService(req.params.id);
-    res.json({ message: "Event deactivated successfully", event });
-  } catch (err) {
-    res.status(404).json({ error: err.message });
-  }
-};
-
-export const restoreEvent = async (req, res) => {
-  try {
-    const event = await restoreEventService(req.params.id);
-    res.json({ message: "Event restored successfully", event });
-  } catch (err) {
-    res.status(404).json({ error: err.message });
-  }
-};
-
-export const getUpcomingEvents = async (req, res) => {
-  try {
-    const events = await getUpcomingEventsService(req.query.limit);
-    res.json({ events });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const getPastEvents = async (req, res) => {
-  try {
-    const events = await getPastEventsService(req.query.limit);
-    res.json({ events });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const getEventsByMerchant = async (req, res) => {
-  try {
-    const result = await getEventsByMerchantService(
-      req.params.merchantName,
-      req.query.page,
-      req.query.limit
-    );
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const getRecommendedEvents = async (req, res) => {
-  try {
-    const events = await getRecommendedEventsService(req.query);
-    res.json({ events });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const getTrendingEvents = async (req, res) => {
-  try {
-    const events = await getTrendingEventsService(req.query.limit);
-    res.json({ events });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const result = await purchaseTicket(purchaseData);
+    
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Purchase ticket error:", error);
+    res.status(500).json({
+      success: false,
+      message:
+        error.response?.data?.message ||
+        error.message ||
+        "Something went wrong",
+    });
   }
 };
