@@ -1,35 +1,14 @@
 import express from "express";
 import {
-  createEvent,
   getAllEvents,
   getEventById,
-  getEventBySlug,
-  updateEvent,
-  deleteEvent,
-  softDeleteEvent,
-  restoreEvent,
-  getUpcomingEvents,
-  getPastEvents,
-  getEventsByMerchant,
-  getRecommendedEvents,
-  getTrendingEvents,
+  initiatePurchase,
 } from "./events.controller.js";
 
 const router = express.Router();
 
 router.get("/", getAllEvents);
-router.get("/past", getPastEvents);
-router.get("/id/:id", getEventById);
-router.get("/slug/:slug", getEventBySlug);
-router.get("/upcoming", getUpcomingEvents);
-router.get("/trending", getTrendingEvents);
-router.get("/recommended", getRecommendedEvents);
-router.get("/merchant/:merchantName", getEventsByMerchant);
-
-router.post("/", createEvent);
-router.put("/:id", updateEvent);
-router.delete("/:id", deleteEvent);
-router.put("/:id/restore", restoreEvent);
-router.delete("/:id/deactivate", softDeleteEvent);
+router.get("/:id", getEventById);
+router.post("/:eventSlug/purchase", initiatePurchase);
 
 export default router;
