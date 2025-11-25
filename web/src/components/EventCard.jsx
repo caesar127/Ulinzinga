@@ -2,8 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import arrowicon from "../assets/icons/arrowicon.svg";
 import placeholderImage from "../assets/Nostalgia-Brunch-124.webp";
+import { setSelectedEvent } from "../features/events/eventsSlice";
+import { useDispatch } from "react-redux";
 
 function EventCard({ event }) {
+  const dispatch = useDispatch();
   return (
     <div key={event._id} className="rounded-lg p-1 relative group">
       {/* Date badge */}
@@ -29,7 +32,7 @@ function EventCard({ event }) {
       <div className="flex justify-between items-center mt-5">
         <div className="flex items-center space-x-2">
           <img
-            src={event.logo_url || placeholderImage}
+            src={event.logo_url || event.banner_url}
             alt={event.title}
             className="h-12 w-12 rounded-full"
           />
@@ -43,7 +46,11 @@ function EventCard({ event }) {
 
         <div className="flex items-center">
           <span className="text-[#ACACAC] text-2xl font-[200]">|</span>
-          <Link className="bg-black text-white rounded-full flex items-center space-x-2 px-2 py-2 text-xs ml-2">
+          <Link
+            to="/eventdetails"
+            onClick={() => dispatch(setSelectedEvent(event))}
+            className="bg-black text-white rounded-full flex items-center space-x-2 px-2 py-2 text-xs ml-2"
+          >
             <img src={arrowicon} alt="arrow" className="h-7 w-7" />
             <span className="pr-3 text-base">Buy</span>
           </Link>
