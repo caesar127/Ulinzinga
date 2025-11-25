@@ -1,15 +1,19 @@
 import axios from "axios";
 import jwt from "jsonwebtoken";
+import bcryptjs from "bcryptjs";
 import User from "../users/users.model.js";
 
 export const merchantLogin = async (req, res) => {
   try {
+    const { role = "organizer" } = req.body;
     const clientId = process.env.PAYCHANGU_CLIENT_ID;
-    const redirectUri = process.env.PAYCHANGU_REDIRECT_URI;
     const apiKey = process.env.PAYCHANGU_API_KEY;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-    if (!clientId || !redirectUri || !apiKey)
+    if (!clientId || !apiKey)
       return res.status(500).json({ error: "Missing PayChangu credentials" });
+
+    const redirectUri = `${frontendUrl}/auth/callback`;
 
     const payload = {
       client_id: clientId,
@@ -17,7 +21,7 @@ export const merchantLogin = async (req, res) => {
       scope: "payments:write payments:read",
       state: `state_${Date.now()}_${Math.random()
         .toString(36)
-        .substring(2, 8)}`,
+        .substring(2, 8)}|${role}`,
       mode: "live",
     };
 
@@ -32,13 +36,114 @@ export const merchantLogin = async (req, res) => {
         },
       }
     );
-
-    res.json({ url: data });
+    console.log(data);
+    res.json(data);
   } catch (err) {
     console.error("PayChangu login error:", err.response?.data || err.message);
     res
       .status(500)
       .json({ error: "Failed to generate PayChangu connect link" });
+  }
+};
+
+export const verifyMerchantToken = async (req, res) => {
+  const { access_token, selected_role } = req.body;
+
+  const apiKey = process.env.PAYCHANGU_API_KEY;
+  if (!access_token)
+    return res.status(400).json({ error: "Access token required" });
+
+  try {
+    const userResponse = await axios.get(
+      `https://api.paychangu.com/connect/user?access_token=${access_token}`,
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const { data } = userResponse.data;
+    console.log(data);
+    if (!data || !data.user || !data.user.email)
+      return res
+        .status(400)
+        .json({ error: "Invalid user data from PayChangu" });
+
+    const paychanguUser = data.user;
+    const business = data.business;
+    let userRole = "organizer";
+
+    if (selected_role && ["vendor", "organizer"].includes(selected_role)) {
+      userRole = selected_role;
+    } else if (["vendor", "organizer"].includes(paychanguUser.role)) {
+      userRole = paychanguUser.role;
+    }
+
+    let user = await User.findOne({ email: paychanguUser.email });
+
+    if (user) {
+      user.name = paychanguUser.name || user.name;
+      user.profile = user.profile || {};
+      user.profile.phone = paychanguUser.phone || user.profile.phone;
+      user.changuId = business.reference;
+      user.authProvider = "paychangu";
+      user.role = userRole;
+
+      if (business) {
+        user.profile.business = {
+          reference: business.reference,
+          name: business.name,
+          live: business.live,
+        };
+      }
+
+      await user.save();
+    } else {
+      user = new User({
+        name: paychanguUser.name,
+        email: paychanguUser.email,
+        profile: {
+          phone: paychanguUser.phone,
+          business: business
+            ? {
+                reference: business.reference,
+                name: business.name,
+                live: business.live,
+              }
+            : null,
+        },
+        changuId: business.reference,
+        authProvider: "paychangu",
+        role: userRole,
+      });
+      await user.save();
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "Merchant (Vendor/Organizer) verified successfully",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profile: user.profile,
+        authProvider: user.authProvider,
+      },
+      business: business,
+    });
+  } catch (err) {
+    console.error("PayChangu token verification error:", err);
+    res.status(500).json({ error: "Failed to verify PayChangu token" });
   }
 };
 
@@ -71,6 +176,10 @@ export const merchantRegister = async (req, res) => {
       user.profile = user.profile || {};
       user.profile.phone = data.phone || user.profile.phone;
       user.changuId = data.id;
+      user.authProvider = "paychangu";
+      user.role = ["vendor", "organizer"].includes(data.role)
+        ? data.role
+        : "organizer";
       await user.save();
     } else {
       user = new User({
@@ -78,6 +187,10 @@ export const merchantRegister = async (req, res) => {
         email: data.email,
         profile: { phone: data.phone },
         changuId: data.id,
+        authProvider: "paychangu",
+        role: ["vendor", "organizer"].includes(data.role)
+          ? data.role
+          : "organizer",
       });
       await user.save();
     }
@@ -88,7 +201,11 @@ export const merchantRegister = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ message: "Login successful", token, user });
+    res.json({
+      message: "Merchant (Vendor/Organizer) login successful",
+      token,
+      user,
+    });
   } catch (err) {
     console.error("PayChangu register error:", err);
     res.status(500).json({ error: "Failed to fetch or save user data" });
@@ -159,16 +276,23 @@ export const googleCallback = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ message: "Google login successful", token, user });
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const redirectUrl = `${frontendUrl}/auth/callback?code=${code}&success=true`;
+    res.redirect(redirectUrl);
   } catch (err) {
     console.error("Google callback error:", err.response?.data || err.message);
-    res.status(500).json({ error: "Failed to complete Google OAuth" });
+
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const redirectUrl = `${frontendUrl}/auth/callback?error=google_auth_failed&error_description=${encodeURIComponent(
+      "Failed to complete Google OAuth"
+    )}`;
+    res.redirect(redirectUrl);
   }
 };
 
-export const signup = async (req, res) => {
+export const userSignup = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, name, username } = req.body;
 
     if (!email || !password)
       return res
@@ -179,11 +303,15 @@ export const signup = async (req, res) => {
     if (existing)
       return res.status(400).json({ message: "Email already in use" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcryptjs.hash(password, 10);
 
     const user = await User.create({
       email,
       password: hashedPassword,
+      name,
+      username,
+      authProvider: "local",
+      role: "user",
     });
 
     const token = jwt.sign(
@@ -195,12 +323,16 @@ export const signup = async (req, res) => {
     );
 
     res.status(201).json({
-      message: "Signup successful!",
+      message: "User signup successful!",
       token,
       user: {
         id: user._id,
+        _id: user._id,
         email: user.email,
         role: user.role,
+        name: user.name,
+        authProvider: user.authProvider,
+        username: user.username,
       },
     });
   } catch (error) {
@@ -208,7 +340,7 @@ export const signup = async (req, res) => {
   }
 };
 
-export const login = async (req, res) => {
+export const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -223,7 +355,12 @@ export const login = async (req, res) => {
         .status(404)
         .json({ message: "No account found with that email" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    if (user.authProvider !== "local")
+      return res.status(400).json({
+        message: "Please use the appropriate login method for this account",
+      });
+
+    const isMatch = await bcryptjs.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: "Invalid password" });
 
     const token = jwt.sign(
@@ -233,14 +370,14 @@ export const login = async (req, res) => {
     );
 
     res.status(200).json({
-      message: "Login successful",
+      message: "User login successful",
       token,
       user: {
         id: user._id,
         email: user.email,
         role: user.role,
         name: user.name || "",
-        avatar: user.avatar || "",
+        authProvider: user.authProvider,
       },
     });
   } catch (error) {
