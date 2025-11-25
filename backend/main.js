@@ -5,9 +5,26 @@ import compression from "compression";
 import cors from "cors";
 import session from "express-session";
 import cookieParser from "cookie-parser";
+import multer from "multer";
 
 config({ quiet: true });
 const app = express();
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  }
+});
 
 app.use(
   compression({
@@ -16,11 +33,8 @@ app.use(
   })
 );
 
-// Import routes
-import authRoutes from "./src/features/auth/auth.routes.js";
-import userRoutes from "./src/features/users/users.routes.js";
-import eventsRoutes from "./src/features/events/events.routes.js";
-import categoryRoutes from "./src/features/category/category.routes.js";
+// Import modular routes
+import { routes } from "./src/index.js";
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -49,11 +63,12 @@ app.use(
   })
 );
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/events", eventsRoutes);
-app.use("/api/categories", categoryRoutes);
+// Apply multer middleware for organizer events routes
+app.use("/api/organizer-events/:id/banner", upload.single('banner'));
+app.use("/api/organizer-events/:id/logo", upload.single('logo'));
+
+// Use modular routes
+app.use("/api", routes);
 
 app.get("/", (req, res) => {
   const networkInterfaces = os.networkInterfaces();
