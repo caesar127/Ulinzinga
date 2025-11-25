@@ -1,0 +1,1 @@
+export { default } from "../../../features/user-events/userEvents.routes.js";
