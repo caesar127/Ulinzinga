@@ -2,19 +2,22 @@ import express from "express";
 import {
   merchantLogin,
   merchantRegister,
+  verifyMerchantToken,
   merchantLogout,
   googleLogin,
   googleCallback,
-  signup,
-  login,
+  userSignup,
+  userLogin,
   getCurrentUser,
 } from "./auth.controller.js";
-import { verifyToken } from "../../middleware/auth.middleware.js";
+import { verifyToken } from "../../core/middleware/auth.middleware.js";
+import { validateRequest, userRegistrationSchema, userLoginSchema } from "../../core/utils/validators.js";
 
 const router = express.Router();
 
-// PayChangu merchant auth
+// Merchants (Vendors & Organizers - PayChangu auth)
 router.post("/merchant/login", merchantLogin);
+router.post("/merchant/verify-token", verifyMerchantToken);
 router.post("/merchant/register", merchantRegister);
 router.post("/merchant/logout", merchantLogout);
 
@@ -22,9 +25,9 @@ router.post("/merchant/logout", merchantLogout);
 router.get("/google/login", googleLogin);
 router.get("/google/callback", googleCallback);
 
-// user auth
-router.post("/signup", signup);
-router.post("/login", login);
+// Regular Users (Local auth)
+router.post("/user/signup", validateRequest(userRegistrationSchema), userSignup);
+router.post("/user/login", validateRequest(userLoginSchema), userLogin);
 
 // Current logged-in user (protected)
 router.get("/me", verifyToken, getCurrentUser);
