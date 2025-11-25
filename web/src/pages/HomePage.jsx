@@ -1,15 +1,11 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import searicon from "../assets/icons/searchicon.svg";
 import arrowicon from "../assets/icons/arrowicon.svg";
-import filtericon from "../assets/icons/filtericon.svg";
 import walleticon from "../assets/icons/walleticon.svg";
 import placeholderImage from "../assets/Nostalgia-Brunch-124.webp";
-import {
-  useGetUpcomingEventsQuery,
-  useGetEventsQuery,
-} from "../features/events/eventsApiSlice";
+import { useGetEventsQuery } from "../features/events/eventsApiSlice";
 import EventsFilterBar from "../components/EventsFilterBar";
 import EventCard from "../components/EventCard";
 
@@ -17,17 +13,35 @@ function HomePage() {
   const { user } = useSelector((state) => state.auth);
   const { events } = useSelector((state) => state.event);
 
-  const { data: upcomingData } = useGetUpcomingEventsQuery(1);
-  const heroEvent = upcomingData?.events?.[0];
-
-  const { data: eventsData } = useGetEventsQuery({
-    page: 1,
-    limit: 8,
-    is_past: "false",
+  const { data: upcomingData } = useGetEventsQuery({
+    per_page: "20",
+    is_past: false,
   });
 
+  const today = new Date();
+  const upcomingEvents = events
+    .filter((event) => new Date(event.start_date) > today)
+    .sort(
+      (a, b) =>
+        new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+    );
+
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    if (upcomingEvents.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % upcomingEvents.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [upcomingEvents]);
+
+  const heroEvent = upcomingEvents[heroIndex];
+
   return (
-    <div className="w-full px-24">
+    <div className="w-full px-24 pb-16">
       <div className="py-6">
         <div className="text-left flex flex-row justify-between items-center space-x-32">
           <div className="space-y-6 w-full">
@@ -68,8 +82,18 @@ function HomePage() {
             />
             {heroEvent && (
               <>
-                <div className="absolute top-2 left-2 bg-white h-12 w-12 rounded-full flex items-center justify-center shadow-md">
-                  {new Date(heroEvent.start_date).getDate()}
+                <div className="absolute top-4 left-4 bg-white h-12 w-12 rounded-xl text-center shadow-md">
+                  <span className="block text-base font-semibold">
+                    {new Date(heroEvent.start_date).getDate()}
+                  </span>
+                  <span className="block text-xs uppercase">
+                    {new Date(heroEvent.start_date).toLocaleDateString(
+                      undefined,
+                      {
+                        month: "short",
+                      }
+                    )}
+                  </span>
                 </div>
                 <div className="absolute bottom-2 right-2 bg-white h-10 px-2 rounded-full flex items-center justify-center space-x-3 shadow-md">
                   <img
@@ -89,9 +113,10 @@ function HomePage() {
           </div>
         </div>
 
+        {/* CTA Section */}
         <div className="bg-[#F3F3F3] mt-12 px-24 py-8 rounded-3xl flex items-center">
           <Link
-            to="/register"
+            to="/signup"
             className="bg-[#FFB300] text-xs text-white px-3 py-2 rounded-full flex items-center space-x-2"
           >
             <span className="px-3">Get Started</span>
@@ -109,12 +134,13 @@ function HomePage() {
         <EventsFilterBar />
 
         <div className="grid grid-cols-4 gap-12 mt-8">
-          {events.map((event) => (
+          {events.slice(0, 8).map((event) => (
             <EventCard key={event._id} event={event} />
           ))}
         </div>
       </div>
 
+      {/* Wallet CTA Section */}
       <div className="bg-black rounded-4xl flex justify-center items-center text-white mt-20 mx-32 px-32 py-12 space-x-18">
         <img
           src={walleticon}
