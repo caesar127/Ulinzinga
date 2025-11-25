@@ -64,7 +64,15 @@ export const createCategoryService = async (categoryData) => {
 
 export const getAllCategoriesService = async (sync = true) => {
   if (sync) await syncCategoriesFromPayChangu();
-  return await EventCategory.find({}).sort({ name: 1 });
+  const categories = await EventCategory.find({}).sort({ name: 1 });
+  // Map to include both MongoDB _id and categoryId for compatibility
+  return categories.map(category => ({
+    _id: category._id,
+    categoryId: category.categoryId,
+    name: category.name,
+    color: category.color,
+    is_active: category.is_active
+  }));
 };
 
 export const getCategoryByIdService = async (id) => {
