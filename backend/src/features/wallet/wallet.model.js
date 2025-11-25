@@ -1,23 +1,14 @@
 import mongoose from "mongoose";
+const { Schema } = mongoose;
 
-const WalletSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      unique: true,
+const WalletSchema = new Schema({
+  balances: [
+    {
+      currency: { type: String, required: true },
+      amount: { type: Number, default: 0 },
     },
-    balance: {
-      type: Number,
-      default: 0,
-    },
-    currency: {
-      type: String,
-      default: "USD",
-    },
-  },
-  { timestamps: true }
-);
+  ],
+  updatedAt: { type: Date, default: Date.now },
+});
 
-export default mongoose.model("Wallet", WalletSchema);
+export default WalletSchema;
