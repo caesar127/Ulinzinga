@@ -1,47 +1,96 @@
 import { apiSlice } from "../../api/apiSlice";
 
-const AUTH_URL = "/api/auth";
+const AUTH_URL = "/api/user/auth";
 
 export const authApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    // Get PayChangu Connect URL for login
-    getChanguConnectUrl: builder.query({
-      query: () => ({
-        url: `${AUTH_URL}/login`,
-        method: "GET",
+    // Merchant Authentication (PayChangu) - Vendors & Organizers
+    getMerchantConnectUrl: builder.mutation({
+      query: ({ role = 'organizer' } = {}) => ({
+        url: `${AUTH_URL}/merchant/login`,
+        method: "POST",
+        body: { role },
       }),
     }),
-    // Complete PayChangu authentication with access token
-    completeChanguAuth: builder.mutation({
+    verifyMerchantToken: builder.mutation({
+      query: ({ access_token, selected_role }) => ({
+        url: `${AUTH_URL}/merchant/verify-token`,
+        method: "POST",
+        body: { access_token, selected_role },
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    completeMerchantAuth: builder.mutation({
       query: (accessToken) => ({
-        url: `${AUTH_URL}/register`,
+        url: `${AUTH_URL}/merchant/register`,
         method: "POST",
         body: { access_token: accessToken },
       }),
       invalidatesTags: ["User"],
     }),
-    // Logout
+
+    // User Authentication (Local)
+    userSignup: builder.mutation({
+      query: (userData) => ({
+        url: `${AUTH_URL}/user/signup`,
+        method: "POST",
+        body: userData,
+      }),
+      invalidatesTags: ["User"],
+    }),
+    userLogin: builder.mutation({
+      query: (credentials) => ({
+        url: `${AUTH_URL}/user/login`,
+        method: "POST",
+        body: credentials,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    // Google OAuth
+    getGoogleAuthUrl: builder.query({
+      query: () => `${AUTH_URL}/google/login`,
+    }),
+
+    // Common endpoints
     logout: builder.mutation({
       query: () => ({
-        url: `${AUTH_URL}/logout`,
+        url: `${AUTH_URL}/merchant/logout`,
         method: "POST",
       }),
       invalidatesTags: ["User"],
     }),
-    // Get current user
     getCurrentUser: builder.query({
-      query: () => ({
-        url: `${AUTH_URL}/me`,
-        method: "GET",
-      }),
+      query: () => `${AUTH_URL}/me`,
       providesTags: ["User"],
+    }),
+
+    // User interests management
+    updateUserInterests: builder.mutation({
+      query: ({ userId, interests }) => ({
+        url: `/api/user/users/${userId}/interests`,
+        method: "PUT",
+        body: { interests },
+      }),
+      invalidatesTags: ["User"],
     }),
   }),
 });
 
 export const {
-  useGetChanguConnectUrlQuery,
-  useCompleteChanguAuthMutation,
+  // Merchant
+  useGetMerchantConnectUrlMutation,
+  useVerifyMerchantTokenMutation,
+  useCompleteMerchantAuthMutation,
+  // User
+  useUserSignupMutation,
+  useUserLoginMutation,
+  // Google
+  useGetGoogleAuthUrlQuery,
+  // Common
   useLogoutMutation,
   useGetCurrentUserQuery,
+  // User interests
+  useUpdateUserInterestsMutation,
 } = authApiSlice;
