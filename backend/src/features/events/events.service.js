@@ -84,14 +84,15 @@ export const purchaseTicket = async (purchaseData) => {
         coupon_code: purchaseData.coupon_code || null,
         redirect_url:
           purchaseData.redirect_url ||
-          "http://localhost/ticketpurchaseredirect",
+          "https://ulinzinga.vercel.app/ticketpurchase",
         cancel_url:
-          purchaseData.cancel_url || "http://localhost/ticketpurchasecancel",
+          purchaseData.cancel_url ||
+          "https://ulinzinga.vercel.app/ticketpurchasecancel",
       },
     };
     console.log(options);
     const { data } = await axios.request(options);
-    console.log(data)
+    console.log(data);
     return data;
   } catch (error) {
     console.error(
