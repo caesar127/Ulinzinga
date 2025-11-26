@@ -68,15 +68,14 @@ function EventDetailsPage() {
         quantity: 1,
       }).unwrap();
 
-      // Redirect to ticket purchase redirect page instead of external payment
-      const redirectUrl = `/ticket-purchase-redirect?status=success&eventId=${event._id}&packageId=${selectedPackage.id}&transactionId=${res?.data?.transaction_id || Date.now()}`;
-      navigate(redirectUrl);
+      const paymentUrl = res?.data?.redirect_url;
+      if (paymentUrl) {
+        window.open(paymentUrl, "_blank");
+      } else {
+        handleErrorToast2("No redirect URL found in response");
+      }
     } catch (err) {
-      console.log("PAY ERROR:", err);
-      
-      // Redirect to error page on failure
-      const errorUrl = `/ticket-purchase-redirect?status=failed&eventId=${event._id}&packageId=${selectedPackage.id}`;
-      navigate(errorUrl);
+      handleErrorToast2("Ooops! Something went wrong. Please try again.");
     }
   };
 
@@ -254,7 +253,10 @@ function EventDetailsPage() {
               You may also like some of the recommended events.
             </p>
           </div>
-          <Link to={"/events"} className="border border-[#ACACAC] rounded-full flex items-center space-x-2 px-5 py-2">
+          <Link
+            to={"/events"}
+            className="border border-[#ACACAC] rounded-full flex items-center space-x-2 px-5 py-2"
+          >
             <span className="text-sm">See more</span>
             <img src={arrowicon} alt="Filter" className="h-7 w-7" />
           </Link>
