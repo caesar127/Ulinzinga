@@ -8,6 +8,7 @@ import {
   googleCallback,
   userSignup,
   userLogin,
+  userLogout,
   getCurrentUser,
 } from "./auth.controller.js";
 import { verifyToken } from "../../core/middleware/auth.middleware.js";
@@ -28,6 +29,7 @@ router.get("/google/callback", googleCallback);
 // Regular Users (Local auth)
 router.post("/user/signup", userSignup);
 router.post("/user/signin", validateRequest(userLoginSchema), userLogin);
+router.post("/user/logout", verifyToken, userLogout);
 
 // Current logged-in user (protected)
 router.get("/me", verifyToken, getCurrentUser);

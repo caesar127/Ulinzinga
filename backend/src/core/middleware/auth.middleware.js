@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../../features/users/users.model.js";
+import tokenBlacklist from "../../core/utils/tokenBlacklist.js";
 
 const parseToken = (req) => {
   const header = req.headers.authorization;
@@ -20,6 +21,11 @@ export const verifyToken = async (req, res, next) => {
   const token = parseToken(req);
   if (!token) return res.status(401).json({ error: "Authorization required" });
 
+  // Check if token is blacklisted
+  if (tokenBlacklist.isTokenBlacklisted(token)) {
+    return res.status(401).json({ error: "Token has been revoked" });
+  }
+
   const user = await attachUser(token);
   if (!user) return res.status(401).json({ error: "Invalid or expired token" });
 
@@ -36,14 +42,17 @@ export const verifyToken = async (req, res, next) => {
 export const optionalAuth = async (req, res, next) => {
   const token = parseToken(req);
   if (token) {
-    const user = await attachUser(token);
-    if (user) {
-      req.user = {
-        userId: user._id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
-      };
+    // Check if token is blacklisted
+    if (!tokenBlacklist.isTokenBlacklisted(token)) {
+      const user = await attachUser(token);
+      if (user) {
+        req.user = {
+          userId: user._id,
+          email: user.email,
+          role: user.role,
+          name: user.name,
+        };
+      }
     }
   }
   next();
