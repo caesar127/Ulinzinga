@@ -27,7 +27,7 @@ router.get("/google/callback", googleCallback);
 
 // Regular Users (Local auth)
 router.post("/user/signup", userSignup);
-router.post("/user/login", validateRequest(userLoginSchema), userLogin);
+router.post("/user/signin", validateRequest(userLoginSchema), userLogin);
 
 // Current logged-in user (protected)
 router.get("/me", verifyToken, getCurrentUser);
