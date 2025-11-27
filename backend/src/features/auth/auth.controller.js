@@ -389,6 +389,34 @@ export const merchantLogout = (req, res) => {
   res.json({ message: "Logged out successfully" });
 };
 
+export const userLogout = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(400).json({ error: "No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    
+    const { default: tokenBlacklist } = await import("../../core/utils/tokenBlacklist.js");
+    
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      const expiryTime = decoded.exp * 1000; 
+      
+      tokenBlacklist.blacklistToken(token, expiryTime);
+      
+      res.json({ message: "User logged out successfully" });
+    } catch (jwtError) {
+      res.json({ message: "User logged out successfully" });
+    }
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ error: "Failed to logout" });
+  }
+};
+
 export const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user?.userId);
