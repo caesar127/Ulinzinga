@@ -6,6 +6,7 @@ import {
   declineConnection,
   listConnections,
   listPendingRequests,
+  listSentRequests,
   removeConnection,
   getSuggestedConnectionsController,
   getAdvancedSuggestedConnectionsController,
@@ -20,6 +21,7 @@ router.get("/", listConnections);
 router.delete("/:id", removeConnection);
 router.post("/", sendConnectionRequest);
 router.get("/pending", listPendingRequests);
+router.get("/sent", listSentRequests);
 router.patch("/:id/accept", approveConnection);
 router.patch("/:id/reject", declineConnection);
 router.get("/suggestions", getSuggestedConnectionsController);
