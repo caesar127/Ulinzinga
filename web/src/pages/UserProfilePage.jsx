@@ -18,6 +18,27 @@ import {
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 
+// API imports
+import {
+  useGetCurrentUserProfileQuery,
+  useUpdateUserProfileMutation,
+} from "../features/users/usersApiSlice";
+import {
+  useGetUserConnectionsQuery,
+  useGetSuggestedConnectionsQuery,
+  useGetAdvancedSuggestedConnectionsQuery,
+  useSendConnectionRequestMutation,
+  useGetPendingRequestsQuery,
+  useGetSentRequestsQuery,
+  useAcceptConnectionMutation,
+  useDeclineConnectionMutation,
+} from "../features/connections/connectionsApiSlice";
+import {
+  useGetUserWalletQuery,
+  useGetWalletTransactionsQuery,
+  useAddFundsToWalletMutation,
+} from "../features/wallet/walletApiSlice";
+
 const UlinzingaYellow = "#FFB300";
 
 function AnimatedActionButton({ icon, label }) {
@@ -66,12 +87,80 @@ function AnimatedActivityItem({ title, subtitle, amount, positive = false }) {
 }
 
 export default function ProfilePage() {
-  const balance = 45000;
+  const { user: authUser } = useSelector((state) => state.auth);
+  const {
+    connections,
+    suggestedConnections,
+    advancedSuggestions,
+    sentRequests,
+  } = useSelector((state) => state.connections);
+  
+  // API queries
+  const { data: userProfile, isLoading: isUserLoading } =
+    useGetCurrentUserProfileQuery(authUser?._id);
+  const { data: connectionsData, isLoading: isConnectionsLoading } =
+    useGetUserConnectionsQuery();
+  const { data: suggestedUsers, isLoading: isSuggestedLoading } =
+    useGetSuggestedConnectionsQuery();
+  const { data: pendingRequests, isLoading: isPendingLoading } =
+    useGetPendingRequestsQuery();
+  const { data: sentRequestsData, isLoading: isSentLoading } =
+    useGetSentRequestsQuery();
+  const { data: wallet, isLoading: isWalletLoading } = useGetUserWalletQuery();
+  const { data: transactions, isLoading: isTransactionsLoading } =
+    useGetWalletTransactionsQuery();
+
+  // Mutations
+  const [sendConnectionRequest] = useSendConnectionRequestMutation();
+  const [acceptConnection] = useAcceptConnectionMutation();
+  const [declineConnection] = useDeclineConnectionMutation();
+  const [addFundsToWallet] = useAddFundsToWalletMutation();
+
   const [isPrivate, setIsPrivate] = useState(false);
-  const { user } = useSelector((state) => state.auth);
-  console.log("USER:", user);
   const [connectionsTab, setConnectionsTab] = useState("connections");
   const [profileTab, setProfileTab] = useState("posts");
+  const [isAddingMoney, setIsAddingMoney] = useState(false);
+
+  const balance = wallet?.balance || 0;
+  const currentUser = userProfile || authUser;
+
+  // Handler functions
+  const handleConnectUser = async (targetUserId) => {
+    try {
+      await sendConnectionRequest({ targetUserId }).unwrap();
+    } catch (error) {
+      console.error("Failed to send connection request:", error);
+    }
+  };
+
+  const handleAcceptRequest = async (connectionId) => {
+    try {
+      await acceptConnection(connectionId).unwrap();
+    } catch (error) {
+      console.error("Failed to accept connection request:", error);
+    }
+  };
+
+  const handleDeclineRequest = async (connectionId) => {
+    try {
+      await declineConnection(connectionId).unwrap();
+    } catch (error) {
+      console.error("Failed to decline connection request:", error);
+    }
+  };
+
+  const handleAddMoney = async () => {
+    setIsAddingMoney(true);
+    try {
+      const amount = 5000;
+      const description = "Added money to wallet";
+      await addFundsToWallet({ amount, description }).unwrap();
+    } catch (error) {
+      console.error("Failed to add money:", error);
+    } finally {
+      setIsAddingMoney(false);
+    }
+  };
 
   return (
     <div className="h-screen bg-[#ffff] grid grid-cols-11 px-10">
@@ -86,19 +175,19 @@ export default function ProfilePage() {
           <div className="flex text-xs font-[500] bg-[#F7F7F7] p-1 rounded-xl gap-1 shadow-sm">
             {[
               { key: "connections", label: "Connections", icon: UserGroupIcon },
-              { key: "suggested", label: "Suggested", icon: UserPlusIcon },
+              { key: "requests", label: "Requests", icon: UserPlusIcon },
               { key: "explore", label: "Explore", icon: MagnifyingGlassIcon },
             ].map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setConnectionsTab(tab.key)}
-                className={`flex items-center mr-1 px-4 py-3 rounded-lg transition ${
+                className={`flex items-center px-4 py-3 rounded-lg transition ${
                   connectionsTab === tab.key
                     ? "text-black bg-white"
                     : "text-gray-500"
                 }`}
               >
-                <tab.icon className="w-4 h-4" />
+                <tab.icon className="w-4 h-4 mr-1" />
                 {tab.label}
               </button>
             ))}
@@ -108,167 +197,387 @@ export default function ProfilePage() {
             {/* --- CONNECTIONS LIST --- */}
             {connectionsTab === "connections" && (
               <div className="space-y-3">
-                {[1, 2, 3, 4].map((c) => (
-                  <motion.div
-                    key={c}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ scale: 1.015 }}
-                    className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-br from-white to-gray-50 shadow-sm border border-gray-100 hover:shadow-lg transition"
-                  >
-                    {/* Profile */}
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <img
-                          src="https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
-                          className="h-12 w-12 rounded-full object-cover  shadow-sm"
-                        />
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-semibold">John Smith</h4>
-                        <p className="text-[11px] text-gray-500">@johnsmith</p>
-                      </div>
-                    </div>
-
-                    {/* Action — change here */}
-                    <motion.button
-                      whileTap={{ scale: 0.92 }}
-                      className="flex items-center gap-1 px-4 py-1.5 text-xs bg-black text-white rounded-xl shadow-sm hover:bg-[#1a1a1a] transition"
+                {isConnectionsLoading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                  </div>
+                ) : connections && connections.length > 0 ? (
+                  connections.map((connection) => (
+                    <motion.div
+                      key={connection._id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.015 }}
+                      className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-br from-white to-gray-50 shadow-sm border border-gray-100 hover:shadow-lg transition"
                     >
-                      <LinkIcon className="w-4 h-4" />
-                      Link Up
-                    </motion.button>
-                  </motion.div>
-                ))}
-              </div>
-            )}
+                      {/* Profile */}
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <img
+                            src={
+                              connection.avatar ||
+                              "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+                            }
+                            className="h-12 w-12 rounded-full object-cover  shadow-sm"
+                          />
+                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                        </div>
 
-            {/* --- SUGGESTED LIST --- */}
-            {connectionsTab === "suggested" && (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((user) => (
-                  <motion.div
-                    key={user}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ scale: 1.015 }}
-                    className="flex items-center justify-between 
-      p-4 rounded-2xl bg-white shadow-sm border border-gray-100 
-      hover:shadow-md transition"
-                  >
-                    {/* Left — avatar + info */}
-                    <div className="flex items-center gap-4">
-                      {/* Avatar */}
-                      <div className="relative">
-                        <img
-                          src="https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg"
-                          className="h-12 w-12 rounded-full object-cover shadow"
-                        />
-
-                        {/* Interest bubble */}
-                        <div
-                          className="absolute -bottom-1 -right-1 bg-[#FFB300] 
-          w-5 h-5 rounded-full flex items-center justify-center shadow"
-                        >
-                          <HeartIcon className="w-3 h-3 text-white" />
+                        <div>
+                          <h4 className="text-sm font-semibold">
+                            {connection.name || "Unknown User"}
+                          </h4>
+                          <p className="text-[11px] text-gray-500">
+                            @{connection.username || "username"}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Info */}
-                      <div>
-                        <h4 className="text-sm font-semibold">Emily Rose</h4>
+                      {/* Action */}
+                      <motion.button
+                        whileTap={{ scale: 0.92 }}
+                        className="flex items-center gap-1 px-4 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-xl shadow-sm hover:bg-gray-300 transition"
+                        disabled
+                      >
+                        <LinkIcon className="w-4 h-4" />
+                        Connected
+                      </motion.button>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="text-center p-8 text-gray-500">
+                    <p>No connections yet</p>
+                  </div>
+                )}
+              </div>
+            )}
 
-                        {/* Mutual connections */}
-                        <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
-                          <UserGroupIcon className="w-3 h-3 text-gray-400" />
-                          12 mutual connections
-                        </p>
+            {/* --- REQUESTS LIST --- */}
+            {connectionsTab === "requests" && (
+              <div className="space-y-4">
+                {/* Check if we have any requests (sent or received) */}
+                {pendingRequests?.length > 0 || sentRequestsData?.length > 0 ? (
+                  <>
+                    {/* Received Requests Section */}
+                    {pendingRequests && pendingRequests.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Received Requests
+                        </h3>
+                        {pendingRequests.map((request) => (
+                          <motion.div
+                            key={request._id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ scale: 1.015 }}
+                            className="flex items-center justify-between p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition"
+                          >
+                            {/* Left — avatar + info */}
+                            <div className="flex items-center gap-4">
+                              {/* Avatar */}
+                              <div className="relative">
+                                <img
+                                  src={
+                                    request.user?.avatar ||
+                                    "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg"
+                                  }
+                                  className="h-12 w-12 rounded-full object-cover shadow"
+                                />
 
-                        {/* Shared interests */}
-                        <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
-                          <SparklesIcon className="w-3 h-3 text-[#FFB300]" />
-                          Yoga • Travel • Photography
-                        </p>
+                                {/* Pending bubble */}
+                                <div className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 rounded-full flex items-center justify-center shadow">
+                                  <UserPlusIcon className="w-3 h-3 text-white" />
+                                </div>
+                              </div>
+
+                              {/* Info */}
+                              <div>
+                                <h4 className="text-sm font-semibold">
+                                  {request.user?.name || "Unknown User"}
+                                </h4>
+
+                                {/* Mutual connections */}
+                                <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+                                  <UserGroupIcon className="w-3 h-3 text-gray-400" />
+                                  {request.user?.mutualConnections || 0} mutual
+                                  connections
+                                </p>
+
+                                {/* Shared interests */}
+                                <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
+                                  <SparklesIcon className="w-3 h-3 text-[#FFB300]" />
+                                  {request.user?.interests &&
+                                  Array.isArray(request.user.interests) &&
+                                  request.user.interests.length > 0
+                                    ? request.user.interests
+                                        .map((i) => i.name)
+                                        .join(" • ")
+                                    : "Various interests"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Accept/Decline buttons */}
+                            <div className="flex items-center gap-2">
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                whileHover={{ scale: 1.04 }}
+                                onClick={() => handleAcceptRequest(request._id)}
+                                className="flex items-center gap-1 bg-green-600 text-white text-xs px-3 py-2 rounded-lg font-semibold shadow-sm hover:bg-green-700 transition"
+                              >
+                                <UserPlusIcon className="w-4 h-4" />
+                                Accept
+                              </motion.button>
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                whileHover={{ scale: 1.04 }}
+                                onClick={() =>
+                                  handleDeclineRequest(request._id)
+                                }
+                                className="flex items-center gap-1 bg-gray-200 text-gray-700 text-xs px-3 py-2 rounded-lg font-semibold shadow-sm hover:bg-gray-300 transition"
+                              >
+                                Decline
+                              </motion.button>
+                            </div>
+                          </motion.div>
+                        ))}
                       </div>
-                    </div>
+                    )}
 
-                    {/* Connect button */}
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      whileHover={{ scale: 1.04 }}
-                      className="flex items-center gap-1 bg-black text-white
-        text-xs px-4 py-2 rounded-lg font-semibold shadow-sm
-        hover:bg-[#1a1a1a] transition"
-                    >
-                      <UserPlusIcon className="w-4 h-4" />
-                      Connect
-                    </motion.button>
-                  </motion.div>
-                ))}
+                    {/* Sent Requests Section */}
+                    {sentRequestsData && sentRequestsData.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Sent Requests
+                        </h3>
+                        {sentRequestsData.map((request) => (
+                          <motion.div
+                            key={request._id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ scale: 1.015 }}
+                            className="flex items-center justify-between p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition"
+                          >
+                            {/* Left — avatar + info */}
+                            <div className="flex items-center gap-4">
+                              {/* Avatar */}
+                              <div className="relative">
+                                <img
+                                  src={
+                                    request.connection?.avatar ||
+                                    "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg"
+                                  }
+                                  className="h-12 w-12 rounded-full object-cover shadow"
+                                />
+
+                                {/* Pending bubble */}
+                                <div className="absolute -bottom-1 -right-1 bg-yellow-500 w-5 h-5 rounded-full flex items-center justify-center shadow">
+                                  <HeartIcon className="w-3 h-3 text-white" />
+                                </div>
+                              </div>
+
+                              {/* Info */}
+                              <div>
+                                <h4 className="text-sm font-semibold">
+                                  {request.connection?.name || "Unknown User"}
+                                </h4>
+
+                                {/* Mutual connections */}
+                                <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+                                  <UserGroupIcon className="w-3 h-3 text-gray-400" />
+                                  {request.connection?.mutualConnections || 0}{" "}
+                                  mutual connections
+                                </p>
+
+                                {/* Shared interests */}
+                                <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
+                                  <SparklesIcon className="w-3 h-3 text-[#FFB300]" />
+                                  {request.connection?.interests &&
+                                  Array.isArray(request.connection.interests) &&
+                                  request.connection.interests.length > 0
+                                    ? request.connection.interests
+                                        .map((i) => i.name)
+                                        .join(" • ")
+                                    : "Various interests"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Status */}
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              className="flex items-center gap-1 bg-yellow-100 text-yellow-700 text-xs px-4 py-2 rounded-lg font-semibold shadow-sm"
+                              disabled
+                            >
+                              Pending
+                            </motion.button>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Show suggestions if no requests exist */
+                  <>
+                    {isSuggestedLoading ? (
+                      <div className="flex justify-center items-center p-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                      </div>
+                    ) : suggestedConnections &&
+                      suggestedConnections.length > 0 ? (
+                      <>
+                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Suggested Connections
+                        </h3>
+                        {suggestedConnections.map((user) => (
+                          <motion.div
+                            key={user._id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ scale: 1.015 }}
+                            className="flex items-center justify-between p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition"
+                          >
+                            {/* Left — avatar + info */}
+                            <div className="flex items-center gap-4">
+                              {/* Avatar */}
+                              <div className="relative">
+                                <img
+                                  src={
+                                    user.avatar ||
+                                    "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg"
+                                  }
+                                  className="h-12 w-12 rounded-full object-cover shadow"
+                                />
+
+                                {/* Interest bubble */}
+                                <div className="absolute -bottom-1 -right-1 bg-[#FFB300] w-5 h-5 rounded-full flex items-center justify-center shadow">
+                                  <HeartIcon className="w-3 h-3 text-white" />
+                                </div>
+                              </div>
+
+                              {/* Info */}
+                              <div>
+                                <h4 className="text-sm font-semibold">
+                                  {user.name || "Unknown User"}
+                                </h4>
+
+                                {/* Mutual connections */}
+                                <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+                                  <UserGroupIcon className="w-3 h-3 text-gray-400" />
+                                  {user.mutualConnections || 0} mutual
+                                  connections
+                                </p>
+
+                                {/* Shared interests */}
+                                <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
+                                  <SparklesIcon className="w-3 h-3 text-[#FFB300]" />
+                                  {Array.isArray(user?.interests) &&
+                                  user.interests.length > 0
+                                    ? user.interests
+                                        .map((i) => i.name)
+                                        .join(" • ")
+                                    : "Various interests"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Connect button */}
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              whileHover={{ scale: 1.04 }}
+                              onClick={() => handleConnectUser(user._id)}
+                              className="flex items-center gap-1 bg-black text-white text-xs px-4 py-2 rounded-lg font-semibold shadow-sm hover:bg-[#1a1a1a] transition"
+                            >
+                              <UserPlusIcon className="w-4 h-4" />
+                              Connect
+                            </motion.button>
+                          </motion.div>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="text-center p-8 text-gray-500">
+                        <p>No requests or suggestions available</p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
             {/* --- EXPLORE GRID --- */}
             {connectionsTab === "explore" && (
-              <div className="grid grid-cols-2 gap-4">
-                {[1, 2, 3, 4, 5, 6].map((e) => (
-                  <motion.div
-                    key={e}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ scale: 1.03, y: -2 }}
-                    className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-lg transition relative"
-                  >
-                    {/* Avatar */}
-                    <div className="relative w-fit mx-auto">
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#FFB300] via-[#FFD95C] to-[#FFE9A7] p-[2px]"></div>
+              <div>
+                {isSuggestedLoading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                  </div>
+                ) : suggestedConnections && suggestedConnections.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {suggestedConnections.map((user) => (
+                      <motion.div
+                        key={user._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ scale: 1.03, y: -2 }}
+                        className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-lg transition relative"
+                      >
+                        <div className="relative w-fit mx-auto">
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#FFB300] via-[#FFD95C] to-[#FFE9A7] p-[2px]" />
 
-                      <img
-                        src="https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg"
-                        className="h-20 w-20 rounded-full mx-auto object-cover relative z-10 border-4 border-white"
-                      />
+                          <img
+                            src={
+                              user?.avatar ||
+                              "https://ui-avatars.com/api/?background=FFB300&color=fff&name=" +
+                                user.name
+                            }
+                            className="h-20 w-20 rounded-full mx-auto object-cover relative z-10 border-4 border-white"
+                          />
 
-                      {/* glow */}
-                      <div className="absolute inset-0 blur-lg opacity-20 bg-[#FFB300]"></div>
-                    </div>
+                          <div className="absolute inset-0 blur-lg opacity-20 bg-[#FFB300]" />
+                        </div>
 
-                    {/* Info */}
-                    <h4 className="mt-3 text-sm font-semibold text-center">
-                      Creator Name
-                    </h4>
-                    <p className="text-[11px] text-gray-500 text-center">
-                      Classical Music • Aesthetics
-                    </p>
+                        <h4 className="mt-3 text-sm font-semibold text-center">
+                          {user.name}
+                        </h4>
+                        <p className="text-[11px] text-gray-500 text-center">
+                          {user.email}
+                        </p>
+                        <p className="text-[10px] text-gray-600 text-center mt-1">
+                          {user.overlapCount} matching interests
+                        </p>
 
-                    {/* Interest chips */}
-                    <div className="flex justify-center gap-2 mt-2">
-                      <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
-                        Music
-                      </span>
-                      <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
-                        Art
-                      </span>
-                    </div>
+                        <div className="flex justify-center gap-2 mt-2 flex-wrap">
+                          {(user.interests || []).map((intObj, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-600"
+                            >
+                              {intObj?.name}
+                            </span>
+                          ))}
+                        </div>
 
-                    {/* View Profile button */}
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      whileHover={{ scale: 1.03 }}
-                      className="w-full mt-3 bg-black text-white text-xs py-2 rounded-xl shadow hover:bg-[#1a1a1a] transition font-semibold"
-                    >
-                      View Profile
-                    </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          whileHover={{ scale: 1.03 }}
+                          className="w-full mt-3 bg-black text-white text-xs py-2 rounded-xl shadow hover:bg-[#1a1a1a] transition font-semibold"
+                        >
+                          View Profile
+                        </motion.button>
 
-                    {/* Top right badge */}
-                    <div className="absolute top-3 right-3">
-                      <div className="bg-[#FFB300] rounded-full p-1.5 shadow">
-                        <SparklesIcon className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                        <div className="absolute top-3 right-3">
+                          <div className="bg-[#FFB300] rounded-full p-1.5 shadow">
+                            <SparklesIcon className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center p-8 text-gray-500">
+                    <p>No suggestions available</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -298,15 +607,31 @@ export default function ProfilePage() {
         {/* Name & Stats */}
         <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-[700] text-[#2D2D2D]">{user.name}</h1>
-            <p className="text-sm text-[#959595]">@{user.username}</p>
+            <h1 className="text-2xl font-[700] text-[#2D2D2D]">
+              {currentUser?.name || "Loading..."}
+            </h1>
+            <p className="text-sm text-[#959595]">
+              @{currentUser?.username || "username"}
+            </p>
           </div>
 
           <div className="bg-white rounded-xl flex overflow-hidden  p-3">
             {[
-              { icon: UserGroupIcon, label: "Connects", value: 34 },
-              { icon: DocumentTextIcon, label: "Posts", value: 34 },
-              { icon: HeartIcon, label: "Favourites", value: 4 },
+              {
+                icon: UserGroupIcon,
+                label: "Connects",
+                value: connections?.length || 0,
+              },
+              {
+                icon: DocumentTextIcon,
+                label: "Posts",
+                value: currentUser?.postsCount || 0,
+              },
+              {
+                icon: HeartIcon,
+                label: "Favourites",
+                value: currentUser?.favoriteEvents?.length || 0,
+              },
             ].map((stat, i) => (
               <div
                 key={i}
@@ -446,9 +771,11 @@ export default function ProfilePage() {
 
             <motion.button
               whileTap={{ scale: 0.97 }}
-              className="mt-5 w-full bg-[#FFB300] text-xs text-black font-semibold py-3 rounded-xl hover:bg-[#e0a200] transition"
+              onClick={handleAddMoney}
+              disabled={isAddingMoney}
+              className="mt-5 w-full bg-[#FFB300] text-xs text-black font-semibold py-3 rounded-xl hover:bg-[#e0a200] transition disabled:opacity-50"
             >
-              Add Money
+              {isAddingMoney ? "Adding..." : "Add Money"}
             </motion.button>
           </motion.div>
 
@@ -536,22 +863,33 @@ export default function ProfilePage() {
           <div className="">
             <h3 className="text-sm font-[500] mb-4">Recent Activity</h3>
             <div className="space-y-5">
-              <AnimatedActivityItem
-                title="Ticket purchase"
-                subtitle="Driemo – The Magician Album Launch"
-                amount="- MWK 40,000"
-              />
-              <AnimatedActivityItem
-                title="Saved money"
-                subtitle="Event Savings"
-                amount="+ MWK 5,000"
-                positive
-              />
-              <AnimatedActivityItem
-                title="Vendor Payment"
-                subtitle="Food & Drinks Stall"
-                amount="- MWK 5,500"
-              />
+              {isTransactionsLoading ? (
+                <div className="flex justify-center items-center p-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black"></div>
+                </div>
+              ) : transactions && transactions.length > 0 ? (
+                transactions
+                  .slice(0, 3)
+                  .map((transaction) => (
+                    <AnimatedActivityItem
+                      key={transaction._id}
+                      title={transaction.description || "Transaction"}
+                      subtitle={
+                        transaction.type === "credit"
+                          ? "Money Added"
+                          : "Money Spent"
+                      }
+                      amount={`${
+                        transaction.type === "credit" ? "+" : "-"
+                      } MWK ${transaction.amount.toLocaleString()}`}
+                      positive={transaction.type === "credit"}
+                    />
+                  ))
+              ) : (
+                <div className="text-center p-4 text-gray-500">
+                  <p>No recent activity</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
