@@ -11,6 +11,7 @@ import {
 } from "./users.controller.js";
 import Joi from "joi";
 import { validateRequest } from "../../core/utils/validators.js";
+import { verifyToken } from "../../core/middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ const interestsUpdateSchema = Joi.object({
 router.post("/", createUser);
 router.get("/", getUsers);
 router.get("/:id", getUserById);
-router.get("/profile", getCurrentUserProfile);
+router.post("/profile/:id", getCurrentUserProfile);
 router.put("/:id", updateUser);
 router.put("/:id/profile", updateUserProfile);
 router.put(
