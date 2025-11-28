@@ -39,7 +39,7 @@ export const authApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
-    userLogin: builder.mutation({
+    userSignin: builder.mutation({
       query: (credentials) => ({
         url: `${AUTH_URL}/user/signin`,
         method: "POST",
@@ -85,7 +85,7 @@ export const {
   useCompleteMerchantAuthMutation,
   // User
   useUserSignupMutation,
-  useUserLoginMutation,
+  useUserSigninMutation,
   // Google
   useGetGoogleAuthUrlQuery,
   // Common
