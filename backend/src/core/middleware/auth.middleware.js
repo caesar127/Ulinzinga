@@ -1,33 +1,49 @@
-import jwt from "jsonwebtoken";
+import jwt, { decode } from "jsonwebtoken";
 import User from "../../features/users/users.model.js";
 import tokenBlacklist from "../../core/utils/tokenBlacklist.js";
 
 const parseToken = (req) => {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith("Bearer ")) return null;
-  return header.split(" ")[1];
+  
+  if (!header || !header.startsWith("Bearer ")) {
+    return null;
+  }
+  const token = header.split(" ")[1];
+  
+  return token;
 };
 
 const attachUser = async (token) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return await User.findById(decoded.userId).select("role email name");
-  } catch {
+
+    const userId = decoded.userId || decoded.id;
+
+    if (!userId) {
+      return null;
+    }
+
+    const user = await User.findById(userId).select("role email name");
+
+    return user;
+  } catch (error) {
     return null;
   }
 };
 
 export const verifyToken = async (req, res, next) => {
   const token = parseToken(req);
+
   if (!token) return res.status(401).json({ error: "Authorization required" });
 
-  // Check if token is blacklisted
   if (tokenBlacklist.isTokenBlacklisted(token)) {
     return res.status(401).json({ error: "Token has been revoked" });
   }
 
   const user = await attachUser(token);
-  if (!user) return res.status(401).json({ error: "Invalid or expired token" });
+  if (!user) {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
 
   req.user = {
     userId: user._id,
