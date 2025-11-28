@@ -240,7 +240,7 @@ export default function ProfilePage() {
                         disabled
                       >
                         <LinkIcon className="w-4 h-4" />
-                        Connected
+                        Link up
                       </motion.button>
                     </motion.div>
                   ))
