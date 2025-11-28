@@ -5,7 +5,7 @@ import {
   spendFunds,
   walletTransactions,
 } from "./wallet.controller.js";
-import { verifyToken } from "../auth/auth.middleware.js";
+import { verifyToken } from "../../core/middleware/auth.middleware.js";
 
 const router = express.Router();
 
