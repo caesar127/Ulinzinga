@@ -13,7 +13,6 @@ router.use("/user", userRoutes);
 router.use("/organizer", organizerRoutes);
 router.use("/admin", adminRoutes);
 
-// Error handling middleware
 router.use(errorHandler);
 
 export default router;
