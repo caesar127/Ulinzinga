@@ -36,10 +36,9 @@ export const merchantLogin = async (req, res) => {
         },
       }
     );
-    console.log(data);
+
     res.json(data);
   } catch (err) {
-    console.error("PayChangu login error:", err.response?.data || err.message);
     res
       .status(500)
       .json({ error: "Failed to generate PayChangu connect link" });
@@ -66,7 +65,7 @@ export const verifyMerchantToken = async (req, res) => {
     );
 
     const { data } = userResponse.data;
-    console.log(data);
+
     if (!data || !data.user || !data.user.email)
       return res
         .status(400)
@@ -142,7 +141,6 @@ export const verifyMerchantToken = async (req, res) => {
       business: business,
     });
   } catch (err) {
-    console.error("PayChangu token verification error:", err);
     res.status(500).json({ error: "Failed to verify PayChangu token" });
   }
 };
@@ -207,7 +205,6 @@ export const merchantRegister = async (req, res) => {
       user,
     });
   } catch (err) {
-    console.error("PayChangu register error:", err);
     res.status(500).json({ error: "Failed to fetch or save user data" });
   }
 };
@@ -224,7 +221,6 @@ export const googleLogin = async (req, res) => {
 
     res.json({ url: authUrl });
   } catch (err) {
-    console.error("Google login error:", err);
     res.status(500).json({ error: "Failed to generate Google login link" });
   }
 };
@@ -280,8 +276,6 @@ export const googleCallback = async (req, res) => {
     const redirectUrl = `${frontendUrl}/auth/callback?code=${code}&success=true`;
     res.redirect(redirectUrl);
   } catch (err) {
-    console.error("Google callback error:", err.response?.data || err.message);
-
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const redirectUrl = `${frontendUrl}/auth/callback?error=google_auth_failed&error_description=${encodeURIComponent(
       "Failed to complete Google OAuth"
@@ -315,7 +309,7 @@ export const userSignup = async (req, res) => {
     });
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { userId: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       {
         expiresIn: "7d",
@@ -364,7 +358,7 @@ export const userLogin = async (req, res) => {
     if (!isMatch) return res.status(401).json({ message: "Invalid password" });
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { userId: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -397,22 +391,23 @@ export const userLogout = async (req, res) => {
     }
 
     const token = authHeader.split(" ")[1];
-    
-    const { default: tokenBlacklist } = await import("../../core/utils/tokenBlacklist.js");
-    
+
+    const { default: tokenBlacklist } = await import(
+      "../../core/utils/tokenBlacklist.js"
+    );
+
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      const expiryTime = decoded.exp * 1000; 
-      
+
+      const expiryTime = decoded.exp * 1000;
+
       tokenBlacklist.blacklistToken(token, expiryTime);
-      
+
       res.json({ message: "User logged out successfully" });
     } catch (jwtError) {
       res.json({ message: "User logged out successfully" });
     }
   } catch (error) {
-    console.error("Logout error:", error);
     res.status(500).json({ error: "Failed to logout" });
   }
 };
