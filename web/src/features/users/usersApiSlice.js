@@ -1,30 +1,34 @@
 import { apiSlice } from "../../api/apiSlice";
-
+const USER_URL = "/api/user/users";
 export const usersApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getUserById: builder.query({
-      query: (userId) => `/users/${userId}`,
-      providesTags: ['User'],
+      query: (userId) => `${USER_URL}/${userId}`,
+      providesTags: ["User"],
     }),
     updateUserProfile: builder.mutation({
       query: ({ userId, ...updateData }) => ({
-        url: `/users/${userId}/profile`,
-        method: 'PUT',
+        url: `${USER_URL}/${userId}/profile`,
+        method: "PUT",
         body: updateData,
       }),
-      invalidatesTags: ['User'],
+      invalidatesTags: ["User"],
     }),
     updateUserInterests: builder.mutation({
       query: ({ userId, interests }) => ({
-        url: `/users/${userId}/interests`,
-        method: 'PUT',
+        url: `${USER_URL}/${userId}/interests`,
+        method: "PUT",
         body: { interests },
       }),
-      invalidatesTags: ['User'],
+      invalidatesTags: ["User"],
     }),
     getCurrentUserProfile: builder.query({
-      query: () => '/users/profile',
-      providesTags: ['User'],
+      query: (userId) => ({
+        url: `${USER_URL}/profile/${userId}`,
+        method: "POST",
+        body: {},
+      }),
+      providesTags: ["User"],
     }),
   }),
 });
