@@ -38,7 +38,7 @@ export const getUserById = async (req, res) => {
 
 export const getCurrentUserProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.params.id;
     const user = await getUserByIdService(userId);
     res.json(user);
   } catch (err) {
