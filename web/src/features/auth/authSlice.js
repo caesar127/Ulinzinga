@@ -84,18 +84,19 @@ const authSlice = createSlice({
       })
       
       // Handle user login
-      .addMatcher(authApiSlice.endpoints.userLogin?.matchPending, (state) => {
+      .addMatcher(authApiSlice.endpoints.userSignin?.matchPending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addMatcher(authApiSlice.endpoints.userLogin?.matchFulfilled, (state, action) => {
+      .addMatcher(authApiSlice.endpoints.userSignin?.matchFulfilled, (state, action) => {
         state.loading = false;
+        console.log("Login fulfilled with payload:", action.payload);
         state.user = action.payload.user;
         state.token = action.payload.token;
         localStorage.setItem("user", JSON.stringify(action.payload.user));
         localStorage.setItem("token", JSON.stringify(action.payload.token));
       })
-      .addMatcher(authApiSlice.endpoints.userLogin?.matchRejected, (state, action) => {
+      .addMatcher(authApiSlice.endpoints.userSignin?.matchRejected, (state, action) => {
         state.loading = false;
         state.error = action.error?.data?.message || action.error?.message || "Login failed";
       })
