@@ -157,7 +157,7 @@ function HomePage() {
             easy to plan, and enjoy every moment.
           </p>
 
-          <Link className="inline-flex bg-[#FFB300] text-xs md:text-sm text-white px-4 py-2 rounded-full items-center space-x-2 w-40">
+          <Link to={"/how-it-works"} className="inline-flex bg-[#FFB300] text-xs md:text-sm text-white px-4 py-2 rounded-full items-center space-x-2 w-40">
             <span>How it works</span>
             <img
               src={arrowicon}
