@@ -10,7 +10,6 @@ import multer from "multer";
 config({ quiet: true });
 const app = express();
 
-// Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
@@ -33,7 +32,6 @@ app.use(
   })
 );
 
-// Import modular routes
 import { routes } from "./src/index.js";
 
 app.use(cors());
@@ -63,11 +61,9 @@ app.use(
   })
 );
 
-// Apply multer middleware for organizer events routes
 app.use("/api/organizer-events/:id/banner", upload.single('banner'));
 app.use("/api/organizer-events/:id/logo", upload.single('logo'));
 
-// Use modular routes
 app.use("/api", routes);
 
 app.get("/", (req, res) => {
