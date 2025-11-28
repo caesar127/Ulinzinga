@@ -4,6 +4,7 @@ import {
   rejectConnection,
   getUserConnections,
   getPendingRequests,
+  getSentRequests,
   deleteConnection,
   getSuggestedConnectionsService,
   getAdvancedSuggestedConnectionsService,
@@ -52,6 +53,15 @@ export const listConnections = async (req, res) => {
 export const listPendingRequests = async (req, res) => {
   try {
     const requests = await getPendingRequests(req.user.userId);
+    res.json(requests);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const listSentRequests = async (req, res) => {
+  try {
+    const requests = await getSentRequests(req.user.userId);
     res.json(requests);
   } catch (error) {
     res.status(400).json({ error: error.message });
