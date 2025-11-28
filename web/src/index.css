@@ -30,7 +30,7 @@ h1 {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #ccc;
+  background-color: #fff;
   border-radius: 20px;
 }
 
