@@ -117,13 +117,6 @@ function SignUpPage() {
         password: formData.password,
         name: formData.username,
       }).unwrap();
-      
-      dispatch(
-        setCredentials({
-          token: result.token,
-          user: result.user,
-        })
-      );
 
       handleSuccessToast2("Account created successfully!");
       setStep(step + 1);

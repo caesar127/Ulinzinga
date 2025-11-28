@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useGetMerchantConnectUrlMutation } from "../../features/auth/authApiSlice";
+import {
+  useGetMerchantConnectUrlMutation,
+  useUserSigninMutation,
+} from "../../features/auth/authApiSlice";
 import { handleSuccessToast2, handleErrorToast2 } from "../../utils/toasts";
 import logoIcon from "../../assets/logo/UlinzingaUlinzinga-2.png";
 import arrowicon from "../../assets/icons/arrowicon.svg";
@@ -13,14 +16,28 @@ function SignInPage() {
 
   const [getMerchantConnectUrl, { isLoading, error }] =
     useGetMerchantConnectUrlMutation();
+  const [userSignIn] = useUserSigninMutation();
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!email || !password) {
       return handleErrorToast2("Please enter email and password");
     }
 
-    handleSuccessToast2("Logged in successfully");
-    navigate("/");
+    try {
+      await userSignIn({
+        email,
+        password,
+      })
+        .unwrap()
+        .then(() => {
+          handleSuccessToast2("Logged in successfully");
+          navigate("/");
+        });
+    } catch (error) {
+      handleErrorToast2(
+        error?.data?.message || error?.message || "Login failed"
+      );
+    }
   };
 
   const handleMerchantLogin = async () => {
@@ -84,7 +101,7 @@ function SignInPage() {
             />
           )}
         </button>
-        
+
         <div className="flex items-center w-full max-w-sm gap-3 my-2">
           <span className="flex-1 h-px bg-gray-300"></span>
           <span className="text-[#8C8C8C] text-sm">or</span>
