@@ -37,7 +37,10 @@ const UserSchema = new Schema(
     },
     profile: ProfileSchema,
     location: { type: GeoSchema, index: "2dsphere" },
-    wallet: WalletSchema,
+    wallet: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Wallet",
+    },
     favoriteEvents: [{ type: Schema.Types.ObjectId, ref: "Event" }],
     interests: [{ type: Schema.Types.ObjectId, ref: "EventCategory" }],
     favoriteOrganizers: [{ type: Schema.Types.ObjectId, ref: "User" }],
