@@ -4,7 +4,7 @@ import { walletApiSlice } from "./walletApiSlice";
 const initialState = {
   wallet: null,
   balance: 0,
-  currency: "USD",
+  currency: "MWK",
   transactions: [],
   transactionFilters: {
     type: "all",       
