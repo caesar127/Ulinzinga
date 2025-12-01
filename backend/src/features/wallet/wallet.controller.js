@@ -3,41 +3,210 @@ import {
   creditWallet,
   debitWallet,
   getTransactions,
+  depositMoney,
+  transferMoney,
+  depositToSavings,
+  withdrawFromSavings,
+  createSavingsGoal,
+  getSavingsGoals,
+  updateSavingsGoal,
+  deleteSavingsGoal,
+  handlePayChanguCallback,
 } from "./wallet.service.js";
 
+// Get wallet information
 export const getWallet = async (req, res) => {
   try {
-    const wallet = await getWalletByUser(req.user.id);
+    const wallet = await getWalletByUser(req.user.userId);
     res.json(wallet);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+// Add funds to wallet (enhanced version)
 export const addFunds = async (req, res) => {
   try {
-    const { amount, description } = req.body;
-    const result = await creditWallet(req.user.id, amount, description);
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-export const spendFunds = async (req, res) => {
-  try {
-    const { amount, description, eventId } = req.body;
-    const result = await debitWallet(req.user.id, amount, description, eventId);
+    const { amount, description, event_slug } = req.body;
+    const result = await depositMoney(
+      req.user.userId,
+      amount,
+      description,
+      event_slug
+    );
     res.json(result);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
+// Spend funds from wallet
+export const spendFunds = async (req, res) => {
+  try {
+    const { amount, description, event_slug } = req.body;
+    const result = await debitWallet(
+      req.user.userId,
+      amount,
+      description,
+      event_slug
+    );
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// Transfer money to organizer/vendor
+export const transferFunds = async (req, res) => {
+  try {
+    const { toUserId, toAccountType, amount, description, event_slug } = req.body;
+    const result = await transferMoney(req.user.userId, {
+      toUserId,
+      toAccountType,
+      amount,
+      description,
+      event_slug,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// Get wallet transactions
 export const walletTransactions = async (req, res) => {
   try {
-    const transactions = await getTransactions(req.user.id);
+    const { type, subtype, status, event, savingsGoalId } = req.query;
+    const filters = { type, subtype, status, event, savingsGoalId };
+    const transactions = await getTransactions(req.user.userId, filters);
     res.json(transactions);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Create a savings goal
+export const createGoal = async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      targetAmount,
+      targetDate,
+      savingType,
+      event_slug,
+      ticketTypeId,
+      ticketType,
+    } = req.body;
+
+    const goal = await createSavingsGoal(req.user.userId, {
+      name,
+      description,
+      targetAmount,
+      targetDate,
+      savingType,
+      event_slug,
+      ticketTypeId,
+      ticketType,
+    });
+    res.json(goal);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// Get savings goals
+export const getGoals = async (req, res) => {
+  try {
+    const goals = await getSavingsGoals(req.user.userId);
+    res.json(goals);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Update savings goal
+export const updateGoal = async (req, res) => {
+  try {
+    const { goalId } = req.params;
+    const updates = req.body;
+    const goal = await updateSavingsGoal(req.user.userId, goalId, updates);
+    res.json(goal);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// Delete savings goal
+export const deleteGoal = async (req, res) => {
+  try {
+    const { goalId } = req.params;
+    const result = await deleteSavingsGoal(req.user.userId, goalId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// Deposit money to savings
+export const depositToSavingsGoal = async (req, res) => {
+  try {
+    const { goalId } = req.params;
+    const { amount } = req.body;
+    const result = await depositToSavings(req.user.userId, amount, goalId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// Withdraw money from savings
+export const withdrawFromSavingsGoal = async (req, res) => {
+  try {
+    const { goalId } = req.params;
+    const { amount } = req.body;
+    const result = await withdrawFromSavings(req.user.userId, amount, goalId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// Handle PayChangu callback/webhook
+export const paychanguCallback = async (req, res) => {
+  try {
+    const callbackData = req.body;
+    console.log("Received PayChangu callback:", callbackData);
+    const result = await handlePayChanguCallback(callbackData);
+    res.json({ success: true, transaction: result });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// Get wallet summary (balance breakdown)
+export const getWalletSummary = async (req, res) => {
+  try {
+    const wallet = await getWalletByUser(req.user.userId);
+    const goals = await getSavingsGoals(req.user.userId);
+
+    const totalSavings = goals.reduce(
+      (sum, goal) => sum + goal.currentAmount,
+      0
+    );
+    const completedGoals = goals.filter((goal) => goal.isCompleted).length;
+    const activeGoals = goals.filter((goal) => !goal.isCompleted).length;
+
+    const summary = {
+      regularBalance: wallet.regularBalance,
+      totalSavings,
+      completedGoals,
+      activeGoals,
+      goals,
+      currency: wallet.currency,
+    };
+
+    res.json(summary);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
