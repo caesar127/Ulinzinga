@@ -18,6 +18,7 @@ import MainLayout from "./shared/layout/MainLayout";
 import EventDetailsPage from "./pages/EventDetailsPage";
 import TicketPurchaseRedirectPage from "./pages/TicketPurchaseRedirectPage";
 import WalletPage from "./pages/WalletPage";
+import PaymentRedirectPage from "./pages/PaymentRedirectPage";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/payment/redirect" element={<PaymentRedirectPage />} />
 
           <Route path="/organizer/*" element={<OrganizerRoutes />} />
         </Route>
