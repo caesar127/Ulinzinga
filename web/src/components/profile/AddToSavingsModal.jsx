@@ -1,15 +1,45 @@
 import { motion } from "framer-motion";
 import Modal from "../../shared/components/ui/Modal";
+import { handleSuccessToast2, handleErrorToast2 } from "../../utils/toasts";
+import { useDepositToSavingsMutation } from "../../features/wallet/walletApiSlice";
 
 export default function AddToSavingsModal({
   isOpen,
   onClose,
   goalName,
+  goalId,
   amount,
   setAmount,
   handleConfirmAddToSavings,
   isAddingToSavings,
 }) {
+  const [depositToSavings] = useDepositToSavingsMutation();
+
+  const handleConfirmAddToSavingsWithToast = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      handleErrorToast2("Please enter a valid amount");
+      return;
+    }
+
+    if (!goalId) {
+      handleErrorToast2("Savings goal not found");
+      return;
+    }
+
+    try {
+      await depositToSavings({
+        goalId,
+        amount: parseFloat(amount),
+      }).unwrap();
+
+      handleSuccessToast2(`Successfully added MWK ${parseFloat(amount).toLocaleString()} to ${goalName}`);
+      onClose();
+      setAmount("");
+    } catch (error) {
+      handleErrorToast2(error?.data?.message || "Failed to add money to savings goal");
+    }
+  };
+
   const handleClose = () => {
     onClose();
     setAmount("");
@@ -51,7 +81,7 @@ export default function AddToSavingsModal({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={handleConfirmAddToSavings}
+            onClick={handleConfirmAddToSavingsWithToast}
             disabled={!amount || parseFloat(amount) <= 0 || isAddingToSavings}
             className="flex-1 bg-[#FFB300] text-black py-3 rounded-xl font-semibold hover:bg-[#e0a200] transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
