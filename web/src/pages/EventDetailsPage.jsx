@@ -10,6 +10,7 @@ import {
 import EventCard from "../components/EventCard";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "../shared/utils";
+import { handleErrorToast2 } from "../utils/toasts";
 
 function EventDetailsPage() {
   const navigate = useNavigate();
@@ -71,6 +72,7 @@ function EventDetailsPage() {
       const paymentUrl = res?.data?.redirect_url;
       if (paymentUrl) {
         window.open(paymentUrl, "_blank");
+        // You might want to show a success toast here or let the redirect handle the feedback
       } else {
         handleErrorToast2("No redirect URL found in response");
       }
