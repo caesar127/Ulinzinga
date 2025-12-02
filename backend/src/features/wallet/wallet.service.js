@@ -50,7 +50,6 @@ export const getWalletByUser = async (userId) => {
 
     return wallet;
   } catch (error) {
-    console.error("Error in getWalletByUser:", error);
     throw new Error(`Failed to get wallet: ${error.message}`);
   }
 };
@@ -99,7 +98,7 @@ export const depositMoney = async (userId, amount, description, event_slug) => {
 
   // PayChangu payment details for deposit
   const backendUrl = process.env.BACKEND_URL || "https://ulinzinga.onrender.com/api";
-  const frontendUrl = process.env.FRONTEND_URL || "https://ulinzinga.com";
+  const frontendUrl = process.env.FRONTEND_URL || "https://ulinzinga.vercel.app/";
 
   // Extract name parts
   const nameParts = (user?.name || "").split(" ");
@@ -126,9 +125,6 @@ export const depositMoney = async (userId, amount, description, event_slug) => {
     "content-type": "application/json",
     Authorization: `Bearer ${process.env.PAYCHANGU_API_KEY}`,
   };
-
-  console.log("Initializing payment with PayChangu:", paymentDetails);
-  console.log("Using headers:", paymentHeaders);
    
   try {
     const paymentResponse = await axios.post(
@@ -136,8 +132,6 @@ export const depositMoney = async (userId, amount, description, event_slug) => {
       paymentDetails,
       { headers: paymentHeaders }
     );
-
-    console.log("PayChangu response:", paymentResponse.data);
 
     const checkoutUrl = paymentResponse?.data?.data?.checkout_url;
 
@@ -150,7 +144,6 @@ export const depositMoney = async (userId, amount, description, event_slug) => {
       },
     };
   } catch (error) {
-    console.log("Error initializing payment with PayChangu:", error.message);
     transaction.status = "failed";
     await transaction.save();
     throw new Error("Payment initialization failed: " + error.message);
@@ -369,25 +362,21 @@ export const getTransactions = async (userId, filters = {}) => {
 // Handle PayChangu webhook/callback
 export const handlePayChanguCallback = async (callbackData) => {
   const { tx_ref, status, amount } = callbackData;
-
-  // Find the transaction
+  
   const transaction = await Transaction.findOne({ tx_ref });
-  console.log(transaction);
+  
   if (!transaction) {
     throw new Error("Transaction not found");
   }
-
-  // If transaction is already completed, don't update wallet balance again
+  
   if (transaction.status === "completed") {
     console.log(`Transaction ${tx_ref} already completed, skipping wallet update`);
     return transaction;
   }
-
-  // Update transaction status
+  
   transaction.status = status === "successful" ? "completed" : "failed";
   await transaction.save();
-
-  // If successful, update wallet balance
+  
   if (status === "successful") {
     const wallet = await Wallet.findById(transaction.wallet);
     if (transaction.type === "credit") {
