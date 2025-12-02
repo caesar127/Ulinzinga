@@ -3,6 +3,7 @@ import Modal from "@/shared/components/ui/Modal";
 import Button from "@/shared/components/ui/Button";
 import Input from "@/shared/components/ui/Input";
 import { useCreateOrganizerEventMutation } from "@/features/organizer-events/organizerEventsApiSlice";
+import { handleSuccessToast2, handleErrorToast2 } from "../../../utils/toasts";
 
 const CreateEventModal = ({ isOpen, onClose, onSuccess }) => {
   const [createEvent, { isLoading }] = useCreateOrganizerEventMutation();
@@ -95,13 +96,15 @@ const CreateEventModal = ({ isOpen, onClose, onSuccess }) => {
       const submitData = { ...formData, banner: bannerFile };
       const res = await createEvent(submitData).unwrap();
 
+      handleSuccessToast2("Event created successfully!");
       resetForm();
       onClose();
       if (onSuccess) onSuccess(res?.data);
     } catch (error) {
+      const errorMessage = error?.data?.message || "Failed to create event. Please try again.";
+      handleErrorToast2(errorMessage);
       setErrors({
-        submit:
-          error?.data?.message || "Failed to create event. Please try again.",
+        submit: errorMessage,
       });
     }
   };
