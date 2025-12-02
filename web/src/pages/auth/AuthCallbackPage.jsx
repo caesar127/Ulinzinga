@@ -105,7 +105,7 @@ function AuthCallbackPage() {
         dispatch(setError(message));
         handleErrorToast2(message);
 
-        setTimeout(() => navigate("/login"), 3000);
+        setTimeout(() => navigate("/"), 3000);
       } finally {
         dispatch(setLoading(false));
       }
@@ -166,13 +166,13 @@ function AuthCallbackPage() {
         {error && (
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/signin")}
               className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-900 transition-colors"
             >
               Retry
             </button>
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/signin")}
               className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition-colors"
             >
               Back to Login
