@@ -38,6 +38,7 @@ import { PostsTab, EventsTab } from "../components/profile/ProfileContent";
 import AddMoneyModal from "../components/profile/AddMoneyModal";
 import AddToSavingsModal from "../components/profile/AddToSavingsModal";
 import CreateGoalModal from "../components/profile/CreateGoalModal";
+import { handleErrorToast2, handleSuccessToast2, handleToast2 } from "../utils/toasts";
 
 export default function ProfilePage() {
   const { user: authUser } = useSelector((state) => state.auth);
@@ -95,7 +96,7 @@ export default function ProfilePage() {
     per_page: "20",
     is_past: false,
   });
-  
+
   const selectedEventForTickets = events?.find(
     (e) => e.slug === goalFormData.event_slug
   );
@@ -104,7 +105,7 @@ export default function ProfilePage() {
     selectedEventForTickets?.slug,
     { skip: !selectedEventForTickets?.slug }
   );
-  
+
   // Computed values
   const balance =
     walletSummary?.regularBalance ||
@@ -139,13 +140,17 @@ export default function ProfilePage() {
     }
   };
 
+  const handleProfileUpdate = (updatedUser) => {
+    console.log("Profile updated:", updatedUser);
+  };
+
   const handleAddMoney = () => {
     setShowAddMoneyModal(true);
   };
 
   const handleConfirmAddMoney = async () => {
     if (!amount || parseFloat(amount) <= 0) {
-      alert("Please enter a valid amount");
+      handleToast2("Please enter a valid amount");
       return;
     }
 
@@ -159,13 +164,14 @@ export default function ProfilePage() {
         amount: amountValue,
         description,
       }).unwrap();
-      
+
       if (response?.payment?.checkout_url) {
         window.location.href = response?.payment?.checkout_url;
       }
     } catch (error) {
-      console.error("Failed to add money:", error);
-      alert("Failed to add money. Please try again.");
+      handleErrorToast2(
+        error?.data?.message || "Failed to add money to wallet"
+      );
     } finally {
       setIsAddingMoney(false);
       setAmount("");
@@ -249,7 +255,7 @@ export default function ProfilePage() {
         ticketTypeId: goalFormData.ticketTypeId,
         ticketType: ticketTypeInfo,
       };
-      
+
       await createSavingsGoal(goalData).unwrap();
 
       setGoalFormData({
@@ -282,21 +288,34 @@ export default function ProfilePage() {
       return;
     }
 
-    setIsAddingToSavings((prev) => ({ ...prev, [selectedGoalForSavings.id]: true }));
+    setIsAddingToSavings((prev) => ({
+      ...prev,
+      [selectedGoalForSavings.id]: true,
+    }));
     setShowAddToSavingsModal(false);
 
     try {
       const amountValue = parseFloat(savingsAmount);
-      await depositToSavings({ 
-        goalId: selectedGoalForSavings.id, 
-        amount: amountValue 
+      await depositToSavings({
+        goalId: selectedGoalForSavings.id,
+        amount: amountValue,
       }).unwrap();
+console.log(amountValue, selectedGoalForSavings);
+      handleSuccessToast2(
+        `Successfully added MWK ${parseFloat(amountValue).toLocaleString()} to ${
+          selectedGoalForSavings.name
+        }`
+      );
       await refetchSavingsGoals();
     } catch (error) {
-      console.error("Failed to add to savings:", error);
-      alert("Failed to add to savings. Please try again.");
+      handleErrorToast2(
+        error?.data?.message || "Failed to add money to savings goal"
+      );
     } finally {
-      setIsAddingToSavings((prev) => ({ ...prev, [selectedGoalForSavings.id]: false }));
+      setIsAddingToSavings((prev) => ({
+        ...prev,
+        [selectedGoalForSavings.id]: false,
+      }));
       setSavingsAmount("");
       setSelectedGoalForSavings(null);
     }
@@ -326,7 +345,10 @@ export default function ProfilePage() {
       {/* MAIN WALLET/PROFILE AREA */}
       <div className="col-span-5 overflow-y-auto custom-scrollbar px-6 pt-6 min-h-screen bg-[#F3F3F3]">
         {/* Profile Header */}
-        <ProfileHeader currentUser={currentUser} />
+        <ProfileHeader 
+          currentUser={currentUser} 
+          onProfileUpdate={handleProfileUpdate}
+        />
 
         {/* Name & Stats */}
         <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -387,7 +409,11 @@ export default function ProfilePage() {
         amount={savingsAmount}
         setAmount={setSavingsAmount}
         handleConfirmAddToSavings={handleConfirmAddToSavings}
-        isAddingToSavings={selectedGoalForSavings ? isAddingToSavings[selectedGoalForSavings.id] : false}
+        isAddingToSavings={
+          selectedGoalForSavings
+            ? isAddingToSavings[selectedGoalForSavings.id]
+            : false
+        }
       />
 
       <CreateGoalModal
