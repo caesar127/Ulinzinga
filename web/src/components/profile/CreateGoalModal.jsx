@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import Modal from "../../shared/components/ui/Modal";
+import { handleSuccessToast2, handleErrorToast2 } from "../../utils/toasts";
+import { useCreateSavingsGoalMutation } from "../../features/wallet/walletApiSlice";
 
 export default function CreateGoalModal({
   isOpen,
@@ -12,6 +14,48 @@ export default function CreateGoalModal({
   handleConfirmCreateGoal,
   isCreatingGoal,
 }) {
+  const [createSavingsGoal] = useCreateSavingsGoalMutation();
+
+  const handleConfirmCreateGoalWithToast = async () => {
+    // Validate form
+    if (!goalFormData.event_slug || !goalFormData.targetAmount || !goalFormData.targetDate) {
+      handleErrorToast2("Please fill in all required fields");
+      return;
+    }
+
+    if (goalFormData.savingType === "ticket_inclusive" && !goalFormData.ticketTypeId) {
+      handleErrorToast2("Please select a ticket type");
+      return;
+    }
+
+    const targetAmount = parseFloat(goalFormData.targetAmount);
+    if (targetAmount <= 0) {
+      handleErrorToast2("Target amount must be greater than 0");
+      return;
+    }
+
+    try {
+      const goalData = {
+        ...goalFormData,
+        targetAmount: targetAmount,
+      };
+
+      await createSavingsGoal(goalData).unwrap();
+
+      handleSuccessToast2("Savings goal created successfully!");
+      onClose();
+      setGoalFormData({
+        event_slug: "",
+        savingType: "ticket_inclusive",
+        ticketTypeId: "",
+        targetAmount: "",
+        targetDate: "",
+      });
+    } catch (error) {
+      handleErrorToast2(error?.data?.message || "Failed to create savings goal");
+    }
+  };
+
   const handleClose = () => {
     onClose();
     setGoalFormData({
@@ -201,7 +245,7 @@ export default function CreateGoalModal({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={handleConfirmCreateGoal}
+            onClick={handleConfirmCreateGoalWithToast}
             disabled={
               !goalFormData.event_slug ||
               !goalFormData.targetAmount ||
