@@ -1,7 +1,5 @@
 import { motion } from "framer-motion";
 import Modal from "../../shared/components/ui/Modal";
-import { handleSuccessToast2, handleErrorToast2 } from "../../utils/toasts";
-import { useAddFundsToWalletMutation } from "../../features/wallet/walletApiSlice";
 
 export default function AddMoneyModal({
   isOpen,
@@ -11,28 +9,6 @@ export default function AddMoneyModal({
   handleConfirmAddMoney,
   isAddingMoney,
 }) {
-  const [addFundsToWallet] = useAddFundsToWalletMutation();
-
-  const handleConfirmAddMoneyWithToast = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      handleErrorToast2("Please enter a valid amount");
-      return;
-    }
-
-    try {
-      await addFundsToWallet({
-        amount: parseFloat(amount),
-        description: "Wallet top-up"
-      }).unwrap();
-
-      handleSuccessToast2(`Successfully added MWK ${parseFloat(amount).toLocaleString()} to your wallet`);
-      onClose();
-      setAmount("");
-    } catch (error) {
-      handleErrorToast2(error?.data?.message || "Failed to add money to wallet");
-    }
-  };
-
   const handleClose = () => {
     onClose();
     setAmount("");
@@ -71,7 +47,7 @@ export default function AddMoneyModal({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={handleConfirmAddMoneyWithToast}
+            onClick={handleConfirmAddMoney}
             disabled={!amount || parseFloat(amount) <= 0 || isAddingMoney}
             className="flex-1 bg-[#FFB300] text-black py-3 rounded-xl font-semibold hover:bg-[#e0a200] transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
