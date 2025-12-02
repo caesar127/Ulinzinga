@@ -142,8 +142,6 @@ export const getSuggestedConnectionsService = async (userId, limit = 2) => {
 
     { $sort: { overlapCount: -1 } },
 
-    { $limit: limit },
-
     {
       $lookup: {
         from: "eventcategories",
