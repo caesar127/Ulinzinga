@@ -7,6 +7,6 @@ const router = express.Router();
 
 const requireVendor = requireRole([USER_ROLES.VENDOR]);
 
-router.use("/", requireVendor, vendorEventsRoutes);
+// router.use("/", requireVendor, vendorEventsRoutes);
 
 export default router;
