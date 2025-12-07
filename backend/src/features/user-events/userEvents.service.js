@@ -8,7 +8,7 @@ export const getRecommendedEventsService = async (userId, limit = 20) => {
   const userInterestIds = user.interests || [];
   
   const events = await Event.find({
-    is_active: true,
+    isActive: true,
     status: "published",
     categories: { $in: userInterestIds },
   })
@@ -29,7 +29,7 @@ export const getTrendingEventsService = async (userId, limit = 20) => {
   const trending = await Event.aggregate([
     { 
       $match: { 
-        is_active: true,
+        isActive: true,
         status: "published",
         categories: { $in: interestIds }
       }
@@ -108,7 +108,7 @@ export const getRecentEventsService = async (limit = 20) => {
 
   return await Event.find({
     createdAt: { $gte: monthAgo },
-    is_active: true,
+    isActive: true,
     status: "published",
   })
     .sort({ createdAt: -1 })
@@ -124,7 +124,7 @@ export const getEventsForYouService = async (userId, limit = 20) => {
   return await Event.aggregate([
     {
       $match: {
-        is_active: true,
+        isActive: true,
         status: "published",
       },
     },
