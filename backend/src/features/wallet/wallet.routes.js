@@ -15,6 +15,10 @@ import {
   getWalletSummary,
   getSavingsEligibility,
   getAvailableEvents,
+  getAvailableOrganizers,
+  getEventsByOrganizerController,
+  allocateFundsToEventController,
+  getAvailableAllocationAmountController,
 } from "./wallet.controller.js";
 import { verifyToken } from "../../core/middleware/auth.middleware.js";
 
@@ -25,6 +29,7 @@ router.get("/", verifyToken, getWallet);
 router.get("/summary", verifyToken, getWalletSummary);
 router.get("/savings/eligibility", verifyToken, getSavingsEligibility);
 router.get("/savings/available-events", verifyToken, getAvailableEvents);
+router.get("/savings/available-organizers", verifyToken, getAvailableOrganizers);
 router.post("/deposit", verifyToken, addFunds);
 router.post("/spend", verifyToken, spendFunds);
 router.post("/transfer", verifyToken, transferFunds);
@@ -42,5 +47,10 @@ router.post("/savings/goals/:goalId/withdraw", verifyToken, withdrawFromSavingsG
 
 // PayChangu webhook/callback (no auth required)
 router.post("/paychangu/callback", paychanguCallback);
+
+// Organizer event allocation routes
+router.get("/savings/organizer/:organizerId/events", verifyToken, getEventsByOrganizerController);
+router.post("/savings/goals/:goalId/allocate", verifyToken, allocateFundsToEventController);
+router.get("/savings/goals/:goalId/available-allocation", verifyToken, getAvailableAllocationAmountController);
 
 export default router;
