@@ -66,7 +66,7 @@ export const updateUserService = async (id, updateData) => {
 };
 
 export const updateUserProfileService = async (userId, updateData) => {
-  const restricted = ["role", "password", "is_active"];
+  const restricted = ["role", "password", "isActive"];
   restricted.forEach((field) => delete updateData[field]);
 
   const user = await User.findByIdAndUpdate(
