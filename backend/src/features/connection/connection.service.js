@@ -119,7 +119,7 @@ export const getSuggestedConnectionsService = async (userId, limit = 2) => {
     {
       $match: {
         _id: { $nin: excludedIdsArray },
-        is_active: true,
+        isActive: true,
         interests: { $in: userInterests },
       },
     },
