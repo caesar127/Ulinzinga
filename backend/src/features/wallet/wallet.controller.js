@@ -12,6 +12,8 @@ import {
   updateSavingsGoal,
   deleteSavingsGoal,
   handlePayChanguCallback,
+  checkSavingsEligibility,
+  getAvailableEventsForSavings,
 } from "./wallet.service.js";
 
 // Get wallet information
@@ -209,5 +211,32 @@ export const getWalletSummary = async (req, res) => {
     res.json(summary);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// Check if user can use savings features
+export const getSavingsEligibility = async (req, res) => {
+  try {
+    const eligibility = await checkSavingsEligibility(req.user.userId);
+    res.json(eligibility);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get available events for savings goals
+export const getAvailableEvents = async (req, res) => {
+  try {
+    const events = await getAvailableEventsForSavings();
+    res.json({
+      status: "success",
+      data: events,
+      count: events.length
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: "error", 
+      message: err.message 
+    });
   }
 };
