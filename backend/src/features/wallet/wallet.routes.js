@@ -13,6 +13,8 @@ import {
   withdrawFromSavingsGoal,
   paychanguCallback,
   getWalletSummary,
+  getSavingsEligibility,
+  getAvailableEvents,
 } from "./wallet.controller.js";
 import { verifyToken } from "../../core/middleware/auth.middleware.js";
 
@@ -21,6 +23,8 @@ const router = express.Router();
 // Basic wallet operations
 router.get("/", verifyToken, getWallet);
 router.get("/summary", verifyToken, getWalletSummary);
+router.get("/savings/eligibility", verifyToken, getSavingsEligibility);
+router.get("/savings/available-events", verifyToken, getAvailableEvents);
 router.post("/deposit", verifyToken, addFunds);
 router.post("/spend", verifyToken, spendFunds);
 router.post("/transfer", verifyToken, transferFunds);
