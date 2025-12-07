@@ -13,6 +13,7 @@
   "author": "Caesar127",
   "license": "ISC",
   "dependencies": {
+    "@scalar/express-api-reference": "^0.8.26",
     "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.1",

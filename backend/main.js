@@ -6,9 +6,13 @@ import cors from "cors";
 import session from "express-session";
 import cookieParser from "cookie-parser";
 import multer from "multer";
+import { setupScalar } from "./src/config/swagger.js";
 
 config({ quiet: true });
 const app = express();
+
+// Setup Scalar API documentation
+setupScalar(app);
 
 const storage = multer.memoryStorage();
 const upload = multer({
