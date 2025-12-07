@@ -1,15 +1,14 @@
 import axios from "axios";
 import Wallet from "./wallet.model.js";
 import Transaction from "./transaction.model.js";
+import Event from "../events/events.model.js";
+import User from "../users/users.model.js";
 
-// Get wallet by user ID
 export const getWalletByUser = async (userId) => {
   try {
-    // First try to find existing wallet
     let wallet = await Wallet.findOne({ user: userId });
 
     if (!wallet) {
-      // If no wallet found, create a new one with proper structure
       const walletData = {
         user: userId,
         regularBalance: 0,
@@ -20,7 +19,6 @@ export const getWalletByUser = async (userId) => {
 
       wallet = await Wallet.create(walletData);
     } else {
-      // If wallet exists but missing new fields, update it
       let needsUpdate = false;
       const updates = {};
 
@@ -54,9 +52,88 @@ export const getWalletByUser = async (userId) => {
   }
 };
 
+export const checkSavingsEligibility = async (userId) => {
+  const wallet = await getWalletByUser(userId);
+
+  return {
+    hasBalance: wallet.regularBalance > 0,
+    balance: wallet.regularBalance,
+    canCreateGoals: wallet.regularBalance > 0,
+    canDeposit: wallet.regularBalance > 0,
+    message:
+      wallet.regularBalance > 0
+        ? "You can create savings goals and make deposits"
+        : "You need to add money to your wallet before creating savings goals",
+  };
+};
+
+export const validateEventSlug = async (eventSlug) => {
+  if (!eventSlug) {
+    return { isValid: true, message: "No event slug provided" };
+  }
+
+  try {
+    const eventExists = await Event.findOne({ slug: eventSlug });
+
+    if (!eventExists) {
+      return {
+        isValid: false,
+        message: `Event with slug "${eventSlug}" not found.`,
+      };
+    }
+
+    return {
+      isValid: true,
+      message: `Event validation passed for slug: ${eventSlug}`,
+      event: eventExists,
+    };
+  } catch (error) {
+    return {
+      isValid: false,
+      message: `Unable to validate event slug "${eventSlug}".`,
+      error: error.message,
+    };
+  }
+};
+
+export const getAvailableEventsForSavings = async () => {
+  try {
+    const events = await Event.find({
+      isActive: true,
+      visible: true,
+    })
+      .select("slug title start_date venue")
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    return events.map((event) => ({
+      slug: event.slug,
+      title: event.title || event.slug,
+      start_date: event.start_date,
+      venue: event.venue,
+      displayText: `${event.title || event.slug} (${event.venue || "TBA"})`,
+    }));
+  } catch (error) {
+    throw new Error(
+      "Unable to fetch available events. Please try again later."
+    );
+  }
+};
+
 export const createSavingsGoal = async (userId, goalData) => {
   const wallet = await getWalletByUser(userId);
-  
+
+  // if (wallet.regularBalance <= 0) {
+  //   throw new Error("Insufficient balance.");
+  // }
+
+  if (goalData.event_slug) {
+    const eventValidation = await validateEventSlug(goalData.event_slug);
+    if (!eventValidation.isValid) {
+      throw new Error(eventValidation.message);
+    }
+  }
+
   const newGoal = {
     name: goalData.name,
     description: goalData.description,
@@ -78,8 +155,6 @@ export const createSavingsGoal = async (userId, goalData) => {
 
 export const depositMoney = async (userId, amount, description, event_slug) => {
   const wallet = await getWalletByUser(userId);
-  
-  const User = (await import("../users/users.model.js")).default;
   const user = await User.findById(userId).select("email name");
 
   const tx_ref = `UL-DEPOSIT-${Date.now()}-${userId}`;
@@ -96,11 +171,11 @@ export const depositMoney = async (userId, amount, description, event_slug) => {
     status: "pending",
   });
 
-  // PayChangu payment details for deposit
-  const backendUrl = process.env.BACKEND_URL || "https://ulinzinga.onrender.com/api";
-  const frontendUrl = process.env.FRONTEND_URL || "https://ulinzinga.vercel.app/";
+  const backendUrl =
+    process.env.BACKEND_URL || "https://ulinzinga.onrender.com/api";
+  const frontendUrl =
+    process.env.FRONTEND_URL || "https://ulinzinga.vercel.app/";
 
-  // Extract name parts
   const nameParts = (user?.name || "").split(" ");
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
@@ -125,7 +200,7 @@ export const depositMoney = async (userId, amount, description, event_slug) => {
     "content-type": "application/json",
     Authorization: `Bearer ${process.env.PAYCHANGU_API_KEY}`,
   };
-   
+
   try {
     const paymentResponse = await axios.post(
       "https://api.paychangu.com/payment",
@@ -154,17 +229,14 @@ export const transferMoney = async (fromUserId, transferData) => {
   const { toUserId, toAccountType, amount, description, event_slug } =
     transferData;
 
-  // Get sender's wallet
   const fromWallet = await getWalletByUser(fromUserId);
 
   if (fromWallet.regularBalance < amount) {
     throw new Error("Insufficient balance for transfer");
   }
 
-  // Generate transaction reference
   const tx_ref = `UL-TRANSFER-${Date.now()}-${fromUserId}`;
 
-  // Create outgoing transaction for sender
   const outgoingTransaction = await Transaction.create({
     user: fromUserId,
     wallet: fromWallet._id,
@@ -180,12 +252,11 @@ export const transferMoney = async (fromUserId, transferData) => {
     status: "pending",
   });
 
-  // Deduct from sender's wallet
   fromWallet.regularBalance -= amount;
   await fromWallet.save();
 
-  // Create incoming transaction for recipient
   const toWallet = await getWalletByUser(toUserId);
+
   const incomingTransaction = await Transaction.create({
     user: toUserId,
     wallet: toWallet._id,
@@ -199,13 +270,12 @@ export const transferMoney = async (fromUserId, transferData) => {
     status: "pending",
   });
 
-  // Add to recipient's wallet
   toWallet.regularBalance += amount;
   await toWallet.save();
 
-  // Mark both transactions as completed
   outgoingTransaction.status = "completed";
   incomingTransaction.status = "completed";
+
   await outgoingTransaction.save();
   await incomingTransaction.save();
 
@@ -218,7 +288,6 @@ export const transferMoney = async (fromUserId, transferData) => {
   };
 };
 
-// Deposit money to savings
 export const depositToSavings = async (userId, amount, goalId) => {
   const wallet = await getWalletByUser(userId);
   const goal = wallet.savingsGoals.id(goalId);
@@ -227,24 +296,29 @@ export const depositToSavings = async (userId, amount, goalId) => {
     throw new Error("Savings goal not found");
   }
 
+  if (wallet.regularBalance <= 0) {
+    throw new Error("Insufficient balance.");
+  }
+
   if (wallet.regularBalance < amount) {
-    throw new Error("Insufficient regular balance");
+    throw new Error(
+      `Insufficient balance. You only have ${wallet.regularBalance} MWK.`
+    );
   }
 
   if (goal.isCompleted) {
     throw new Error("Savings goal is already completed");
   }
 
-  // Transfer from regular to savings
   wallet.regularBalance -= amount;
   goal.currentAmount += amount;
-  
+
   if (goal.currentAmount >= goal.targetAmount) {
     goal.isCompleted = true;
   }
 
   await wallet.save();
-  
+
   const transaction = await Transaction.create({
     user: userId,
     wallet: wallet._id,
@@ -259,7 +333,6 @@ export const depositToSavings = async (userId, amount, goalId) => {
   return { wallet, transaction, goal };
 };
 
-// Withdraw money from savings (only when goal is reached)
 export const withdrawFromSavings = async (userId, amount, goalId) => {
   const wallet = await getWalletByUser(userId);
   const goal = wallet.savingsGoals.id(goalId);
@@ -273,17 +346,16 @@ export const withdrawFromSavings = async (userId, amount, goalId) => {
   }
 
   if (goal.currentAmount < amount) {
-    throw new Error("Insufficient savings balance");
+    throw new Error(
+      `Insufficient savings. You have ${goal.currentAmount} MWK.`
+    );
   }
 
-  // Transfer from savings to regular
-  wallet.savingsBalance -= amount;
-  wallet.regularBalance += amount;
   goal.currentAmount -= amount;
+  wallet.regularBalance += amount;
 
   await wallet.save();
 
-  // Create transaction record
   const transaction = await Transaction.create({
     user: userId,
     wallet: wallet._id,
@@ -298,9 +370,9 @@ export const withdrawFromSavings = async (userId, amount, goalId) => {
   return { wallet, transaction, goal };
 };
 
-// Credit wallet (existing function - updated for new structure)
 export const creditWallet = async (userId, amount, description, event_slug) => {
   const wallet = await getWalletByUser(userId);
+
   wallet.regularBalance += amount;
   await wallet.save();
 
@@ -321,9 +393,9 @@ export const creditWallet = async (userId, amount, description, event_slug) => {
   return { wallet, transaction };
 };
 
-// Debit wallet (existing function - updated for new structure)
 export const debitWallet = async (userId, amount, description, event_slug) => {
   const wallet = await getWalletByUser(userId);
+
   if (wallet.regularBalance < amount) {
     throw new Error("Insufficient balance");
   }
@@ -346,7 +418,6 @@ export const debitWallet = async (userId, amount, description, event_slug) => {
   return { wallet, transaction };
 };
 
-// Get transactions (enhanced)
 export const getTransactions = async (userId, filters = {}) => {
   const query = { user: userId };
 
@@ -359,24 +430,22 @@ export const getTransactions = async (userId, filters = {}) => {
   return Transaction.find(query).sort({ createdAt: -1 });
 };
 
-// Handle PayChangu webhook/callback
 export const handlePayChanguCallback = async (callbackData) => {
-  const { tx_ref, status, amount } = callbackData;
-  
+  const { tx_ref, status } = callbackData;
+
   const transaction = await Transaction.findOne({ tx_ref });
-  
+
   if (!transaction) {
     throw new Error("Transaction not found");
   }
-  
+
   if (transaction.status === "completed") {
-    console.log(`Transaction ${tx_ref} already completed, skipping wallet update`);
     return transaction;
   }
-  
+
   transaction.status = status === "successful" ? "completed" : "failed";
   await transaction.save();
-  
+
   if (status === "successful") {
     const wallet = await Wallet.findById(transaction.wallet);
     if (transaction.type === "credit") {
@@ -390,13 +459,11 @@ export const handlePayChanguCallback = async (callbackData) => {
   return transaction;
 };
 
-// Get savings goals for user
 export const getSavingsGoals = async (userId) => {
   const wallet = await getWalletByUser(userId);
   return wallet.savingsGoals;
 };
 
-// Update savings goal
 export const updateSavingsGoal = async (userId, goalId, updates) => {
   const wallet = await getWalletByUser(userId);
   const goal = wallet.savingsGoals.id(goalId);
@@ -405,7 +472,13 @@ export const updateSavingsGoal = async (userId, goalId, updates) => {
     throw new Error("Savings goal not found");
   }
 
-  // Update allowed fields
+  if (updates.event_slug && updates.event_slug !== goal.event_slug) {
+    const eventValidation = await validateEventSlug(updates.event_slug);
+    if (!eventValidation.isValid) {
+      throw new Error(`Invalid event slug: ${eventValidation.message}`);
+    }
+  }
+
   if (updates.name) goal.name = updates.name;
   if (updates.description) goal.description = updates.description;
   if (updates.targetAmount) goal.targetAmount = updates.targetAmount;
@@ -415,7 +488,6 @@ export const updateSavingsGoal = async (userId, goalId, updates) => {
   if (updates.ticketTypeId) goal.ticketTypeId = updates.ticketTypeId;
   if (updates.ticketType) goal.ticketType = updates.ticketType;
 
-  // Check if goal is completed after update
   if (goal.currentAmount >= goal.targetAmount) {
     goal.isCompleted = true;
   }
@@ -424,7 +496,6 @@ export const updateSavingsGoal = async (userId, goalId, updates) => {
   return goal;
 };
 
-// Delete savings goal
 export const deleteSavingsGoal = async (userId, goalId) => {
   const wallet = await getWalletByUser(userId);
   const goal = wallet.savingsGoals.id(goalId);
