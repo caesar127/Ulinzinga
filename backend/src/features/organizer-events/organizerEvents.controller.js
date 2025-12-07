@@ -27,9 +27,13 @@ export const create = async (req, res) => {
       timezone,
       terms_text,
       balance_ref,
-      is_active,
+      isActive,
       color,
       package_data,
+      category,
+      capacity,
+      isVisible,
+      isDraft,
     } = req.body;
 
     if (!organizerToken) {
@@ -61,19 +65,23 @@ export const create = async (req, res) => {
       timezone: timezone || "UTC",
       terms_text,
       balance_ref,
-      is_active: is_active || "1",
+      isActive: isActive !== undefined ? (isActive ? "1" : "0") : "1",
       color: color || "",
       package: package_data || {},
+      category: category || "other",
+      capacity: capacity || null,
+      isVisible: isVisible !== undefined ? isVisible : true,
       organizerId: organizerToken,
       banner: req.files?.banner?.[0] || null,
       logo: req.files?.logo?.[0] || null,
+      isDraft: isDraft || false,
     };
 
     const result = await createEvent(eventData);
 
     res.status(201).json({
       success: true,
-      message: "Event created successfully",
+      message: isDraft ? "Event draft saved successfully" : "Event created successfully",
       data: result,
     });
   } catch (error) {
