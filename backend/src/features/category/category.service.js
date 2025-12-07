@@ -37,7 +37,7 @@ export const syncCategoriesFromPayChangu = async () => {
         categoryId: apiCat.id,
         name: apiCat.name,
         color: apiCat.color || "#3b82f6",
-        is_active: apiCat.is_active !== false,
+        isActive: apiCat.is_active !== false,
       },
       { upsert: true, new: true }
     );
@@ -56,7 +56,7 @@ export const createCategoryService = async (categoryData) => {
     categoryId: categoryData.id,
     name: categoryData.name,
     color: categoryData.color || "#3b82f6",
-    is_active: categoryData.is_active !== false,
+    isActive: categoryData.isActive !== false,
   });
 
   return category;
@@ -71,7 +71,7 @@ export const getAllCategoriesService = async (sync = true) => {
     categoryId: category.categoryId,
     name: category.name,
     color: category.color,
-    is_active: category.is_active
+    isActive: category.isActive
   }));
 };
 
@@ -85,7 +85,7 @@ export const getCategoryByIdService = async (id) => {
       categoryId: apiResponse.data.id,
       name: apiResponse.data.name,
       color: apiResponse.data.color || "#3b82f6",
-      is_active: apiResponse.data.is_active !== false,
+      isActive: apiResponse.data.is_active !== false,
     });
   }
   return category;
