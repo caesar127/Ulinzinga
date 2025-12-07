@@ -2,6 +2,12 @@ import {
   getAllEventsService,
   getEventByIdService,
   purchaseTicket,
+  syncEvents,
+  cleanupOrphanedEvents,
+  updateEventVisibilityService,
+  updateEventStatusService,
+  deleteEventService,
+  getUserTicketsByEmailService,
 } from "./events.service.js";
 
 export const getAllEvents = async (req, res) => {
@@ -19,6 +25,44 @@ export const getAllEvents = async (req, res) => {
       status: "error",
       message: "Failed to fetch events",
       error: error.response?.data || error.message,
+    });
+  }
+};
+
+export const cleanupOrphanedEventsController = async (req, res) => {
+  try {
+    const result = await cleanupOrphanedEvents();
+    
+    return res.status(200).json({
+      status: "success",
+      message: "Orphaned events cleanup completed",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Cleanup orphaned events error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to cleanup orphaned events",
+      error: error.message,
+    });
+  }
+};
+
+export const syncEventsController = async (req, res) => {
+  try {
+    const result = await syncEvents();
+    
+    return res.status(200).json({
+      status: "success",
+      message: "Events synchronized successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Sync events error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to synchronize events",
+      error: error.message,
     });
   }
 };
@@ -49,6 +93,11 @@ export const initiatePurchase = async (req, res) => {
       coupon_code,
       redirect_url,
       cancel_url,
+      // Gift ticket specific fields
+      isGift,
+      recipientName,
+      recipientEmail,
+      giftMessage,
     } = req.body;
 
     if (!package_id || !name || !email || !quantity) {
@@ -66,6 +115,10 @@ export const initiatePurchase = async (req, res) => {
       coupon_code,
       redirect_url,
       cancel_url,
+      isGift: isGift || false,
+      recipientName: recipientName || null,
+      recipientEmail: recipientEmail || null,
+      giftMessage: giftMessage || null,
     };
 
     const result = await purchaseTicket(purchaseData);
@@ -79,6 +132,114 @@ export const initiatePurchase = async (req, res) => {
         error.response?.data?.message ||
         error.message ||
         "Something went wrong",
+    });
+  }
+};
+
+// Admin management controllers
+export const updateEventVisibility = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isVisible } = req.body;
+
+    if (typeof isVisible !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: "isVisible must be a boolean value",
+      });
+    }
+
+    const result = await updateEventVisibilityService(id, isVisible);
+
+    return res.status(200).json({
+      success: true,
+      message: "Event visibility updated successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Update event visibility error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update event visibility",
+      error: error.message,
+    });
+  }
+};
+
+export const updateEventStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: "isActive must be a boolean value",
+      });
+    }
+
+    const result = await updateEventStatusService(id, isActive);
+
+    return res.status(200).json({
+      success: true,
+      message: "Event status updated successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Update event status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update event status",
+      error: error.message,
+    });
+  }
+};
+
+export const deleteEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await deleteEventService(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Event deleted successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Delete event error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete event",
+      error: error.message,
+    });
+  }
+};
+
+export const getUserTicketsByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email parameter is required",
+      });
+    }
+
+    const tickets = await getUserTicketsByEmailService(email);
+
+    return res.status(200).json({
+      success: true,
+      message: "User tickets fetched successfully",
+      data: tickets,
+    });
+  } catch (error) {
+    console.error("Get user tickets by email error:", error);
+    return res.status(error.response?.status || 500).json({
+      success: false,
+      message: "Failed to fetch user tickets",
+      error: error.response?.data?.message || error.message,
     });
   }
 };
