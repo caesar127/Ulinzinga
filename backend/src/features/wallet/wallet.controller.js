@@ -14,6 +14,10 @@ import {
   handlePayChanguCallback,
   checkSavingsEligibility,
   getAvailableEventsForSavings,
+  getAvailableOrganizersForSavings,
+  getEventsByOrganizer,
+  allocateFundsToEvent,
+  getAvailableAllocationAmount,
 } from "./wallet.service.js";
 
 // Get wallet information
@@ -99,6 +103,13 @@ export const createGoal = async (req, res) => {
       event_slug,
       ticketTypeId,
       ticketType,
+      ticketQuantity,
+      additionalSpending,
+      organizerId,
+      cutoffDate,
+      priority,
+      reminderDays,
+      isAutoPurchase,
     } = req.body;
 
     const goal = await createSavingsGoal(req.user.userId, {
@@ -110,6 +121,13 @@ export const createGoal = async (req, res) => {
       event_slug,
       ticketTypeId,
       ticketType,
+      ticketQuantity,
+      additionalSpending,
+      organizerId,
+      cutoffDate,
+      priority,
+      reminderDays,
+      isAutoPurchase,
     });
     res.json(goal);
   } catch (err) {
@@ -235,6 +253,83 @@ export const getAvailableEvents = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ 
+      status: "error", 
+      message: err.message 
+    });
+  }
+};
+
+// Get available organizers for savings goals
+export const getAvailableOrganizers = async (req, res) => {
+  try {
+    const organizers = await getAvailableOrganizersForSavings();
+    res.json({
+      status: "success",
+      data: organizers,
+      count: organizers.length
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: "error", 
+      message: err.message 
+    });
+  }
+};
+
+// Get events by specific organizer
+export const getEventsByOrganizerController = async (req, res) => {
+  try {
+    const { organizerId } = req.params;
+    const events = await getEventsByOrganizer(organizerId);
+    res.json({
+      status: "success",
+      data: events,
+      count: events.length
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: "error", 
+      message: err.message 
+    });
+  }
+};
+
+// Allocate funds from organizer savings to specific event
+export const allocateFundsToEventController = async (req, res) => {
+  try {
+    const { goalId } = req.params;
+    const { event_slug, event_title, amount } = req.body;
+    
+    const allocation = await allocateFundsToEvent(req.user.userId, goalId, {
+      event_slug,
+      event_title,
+      amount: parseFloat(amount)
+    });
+    
+    res.json({
+      status: "success",
+      data: allocation,
+      message: "Funds allocated successfully"
+    });
+  } catch (err) {
+    res.status(400).json({ 
+      status: "error", 
+      message: err.message 
+    });
+  }
+};
+
+// Get available allocation amount for a goal
+export const getAvailableAllocationAmountController = async (req, res) => {
+  try {
+    const { goalId } = req.params;
+    const availableAmount = await getAvailableAllocationAmount(req.user.userId, goalId);
+    res.json({
+      status: "success",
+      data: { availableAmount }
+    });
+  } catch (err) {
+    res.status(400).json({ 
       status: "error", 
       message: err.message 
     });
