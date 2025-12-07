@@ -47,7 +47,7 @@ const UserSchema = new Schema(
     isPrivate: { type: Boolean, default: false },
     lastLogin: Date,
     views: { type: Number, default: 0 },
-    is_active: { type: Boolean, default: true },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
