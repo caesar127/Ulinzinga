@@ -28,7 +28,7 @@ export const createEvent = async (eventData) => {
         "color",
         "terms_text",
         "balance_ref",
-        "is_active",
+        "isActive",
       ];
 
       fields.forEach((field) => {
@@ -75,7 +75,7 @@ export const createEvent = async (eventData) => {
           color: eventData.color || "",
           terms_text: eventData.terms_text,
           balance_ref: eventData.balance_ref,
-          is_active: eventData.is_active || "1",
+          isActive: eventData.isActive || "1",
           package: eventData.package || {},
         },
         { headers: buildHeaders(eventData.organizerId) }
@@ -134,7 +134,7 @@ export const updateEvent = async (eventData) => {
       timezone: eventData.timezone,
       color: eventData.color,
       terms_text: eventData.terms_text,
-      is_active: eventData.is_active,
+      isActive: eventData.isActive,
     };
 
     const response = await axios.patch(
