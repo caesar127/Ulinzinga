@@ -1,6 +1,7 @@
 import User from "./users.model.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
+import { PAGINATION } from "../core/utils/constants.js";
 
 export const createUserService = async (userData) => {
   const exists = await User.findOne({
@@ -17,8 +18,11 @@ export const createUserService = async (userData) => {
 };
 
 export const getUsersService = async (role, query = {}) => {
-  const { page = 1, limit = 10, search } = query;
+  const { page = 1, limit = PAGINATION.USERS_DEFAULT_LIMIT, search } = query;
   const filter = role ? { role } : {};
+  
+  // Validate and clamp limit
+  const validatedLimit = Math.max(PAGINATION.MIN_LIMIT, Math.min(PAGINATION.USERS_MAX_LIMIT, parseInt(limit) || PAGINATION.USERS_DEFAULT_LIMIT));
 
   if (search) {
     filter.$or = [
@@ -28,18 +32,19 @@ export const getUsersService = async (role, query = {}) => {
     ];
   }
 
-  const skip = (page - 1) * limit;
+  const skip = (page - 1) * validatedLimit;
   const total = await User.countDocuments(filter);
   const users = await User.find(filter)
     .skip(skip)
-    .limit(parseInt(limit))
+    .limit(validatedLimit)
     .select("-password");
 
   return {
     users,
     total,
     page: parseInt(page),
-    pages: Math.ceil(total / limit),
+    pages: Math.ceil(total / validatedLimit),
+    limit: validatedLimit,
   };
 };
 
