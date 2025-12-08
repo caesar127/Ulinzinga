@@ -337,7 +337,7 @@ const openApiSpec = {
     },
 
     // ==================== EVENTS ENDPOINTS ====================
-    "/api/events": {
+    "/api/public/events": {
       get: {
         summary: "Get all events with pagination",
         tags: ["Events"],
@@ -425,7 +425,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/events/{id}": {
+    "/api/public/events/{id}": {
       get: {
         summary: "Get event by ID",
         tags: ["Events"],
@@ -451,7 +451,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/events/{eventSlug}/purchase": {
+    "/api/public/events/{eventSlug}/purchase": {
       post: {
         summary: "Initiate ticket purchase",
         tags: ["Events"],
@@ -486,7 +486,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/events/sync": {
+    "/api/public/events/sync": {
       post: {
         summary: "Sync events from external source",
         tags: ["Events"],
@@ -496,7 +496,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/events/cleanup-orphaned": {
+    "/api/public/events/cleanup-orphaned": {
       post: {
         summary: "Cleanup orphaned events",
         tags: ["Events"],
@@ -506,7 +506,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/events/{id}/visibility": {
+    "/api/public/events/{id}/visibility": {
       put: {
         summary: "Update event visibility",
         tags: ["Events"],
@@ -540,7 +540,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/events/{id}/status": {
+    "/api/public/events/{id}/status": {
       put: {
         summary: "Update event status",
         tags: ["Events"],
@@ -577,7 +577,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/events/tickets/by-email/{email}": {
+    "/api/public/events/tickets/by-email/{email}": {
       get: {
         summary: "Get user tickets by email",
         tags: ["Events"],
