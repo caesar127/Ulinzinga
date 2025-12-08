@@ -1,6 +1,6 @@
 import User from "../users/users.model.js";
 import Event from "../events/events.model.js";
-import { PAGINATION } from "../core/utils/constants.js";
+import { PAGINATION } from "../../core/utils/constants.js";
 
 export const getRecommendedEventsService = async (userId, limit = PAGINATION.RECOMMENDED_EVENTS_LIMIT) => {
   const user = await User.findById(userId).select("interests location");
