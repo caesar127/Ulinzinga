@@ -13,12 +13,13 @@ import {
 export const getAllEvents = async (req, res) => {
   try {
     const queryParams = req.query;
-    const data = await getAllEventsService(queryParams);
+    const result = await getAllEventsService(queryParams);
 
     return res.status(200).json({
       status: "success",
       message: "Events fetched successfully",
-      data,
+      data: result.events,
+      pagination: result.pagination,
     });
   } catch (error) {
     return res.status(error.response?.status || 500).json({
