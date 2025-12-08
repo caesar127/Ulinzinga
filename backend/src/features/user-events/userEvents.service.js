@@ -1,7 +1,8 @@
 import User from "../users/users.model.js";
 import Event from "../events/events.model.js";
+import { PAGINATION } from "../core/utils/constants.js";
 
-export const getRecommendedEventsService = async (userId, limit = 20) => {
+export const getRecommendedEventsService = async (userId, limit = PAGINATION.RECOMMENDED_EVENTS_LIMIT) => {
   const user = await User.findById(userId).select("interests location");
   if (!user) throw new Error("User not found");
 
@@ -20,7 +21,7 @@ export const getRecommendedEventsService = async (userId, limit = 20) => {
   return events;
 };
 
-export const getTrendingEventsService = async (userId, limit = 20) => {
+export const getTrendingEventsService = async (userId, limit = PAGINATION.TRENDING_EVENTS_LIMIT) => {
   const user = await User.findById(userId).select("interests");
   if (!user) throw new Error("User not found");
 
@@ -102,7 +103,7 @@ export const getFavoriteOrganizersService = async (userId) => {
   return user.favoriteOrganizers || [];
 };
 
-export const getRecentEventsService = async (limit = 20) => {
+export const getRecentEventsService = async (limit = PAGINATION.RECENT_EVENTS_LIMIT) => {
   const monthAgo = new Date();
   monthAgo.setDate(monthAgo.getDate() - 30);
 
@@ -115,7 +116,7 @@ export const getRecentEventsService = async (limit = 20) => {
     .limit(limit);
 };
 
-export const getEventsForYouService = async (userId, limit = 20) => {
+export const getEventsForYouService = async (userId, limit = PAGINATION.RECOMMENDED_EVENTS_LIMIT) => {
   const user = await User.findById(userId).select("interests location");
   if (!user) throw new Error("User not found");
 
