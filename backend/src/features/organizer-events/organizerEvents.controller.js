@@ -96,6 +96,7 @@ export const create = async (req, res) => {
 export const list = async (req, res) => {
   try {
     const organizerToken = req.headers.authorization?.replace("Bearer ", "");
+    const queryParams = req.query;
 
     if (!organizerToken) {
       return res.status(400).json({
@@ -104,12 +105,13 @@ export const list = async (req, res) => {
       });
     }
 
-    const result = await getEvents(organizerToken);
+    const result = await getEvents(organizerToken, queryParams);
 
     res.status(200).json({
       success: true,
       message: "Events retrieved successfully",
-      data: result,
+      data: result.data || result,
+      pagination: result.pagination,
     });
   } catch (error) {
     res.status(500).json({
