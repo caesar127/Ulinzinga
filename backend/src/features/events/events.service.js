@@ -1,6 +1,7 @@
 import axios from "axios";
 import mongoose from "mongoose";
 import Event from "./events.model.js";
+import { PAGINATION, SORT_OPTIONS } from "../../core/utils/constants.js";
 
 const BASE_URL = "https://dashboard.paychangu.com/mobile/api/public";
 const AUTH_HEADER = {
@@ -20,17 +21,33 @@ export const getAllEventsService = async (queryParams = {}) => {
       } catch {}
     }
 
-    let localEventsQuery = Event.find({}).sort({ createdAt: -1 });
+    // Pagination parameters with validation
+    let page = parseInt(queryParams.page) || 1;
+    let limit = parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT;
+    
+    // Validate and clamp pagination values
+    page = Math.max(1, page);
+    limit = Math.max(PAGINATION.EVENTS_MIN_LIMIT, Math.min(PAGINATION.EVENTS_MAX_LIMIT, limit));
+    
+    const skip = (page - 1) * limit;
+    
+    // Sort parameters with validation
+    const validSortFields = Object.values(SORT_OPTIONS.EVENTS_SORT_BY);
+    const sortBy = validSortFields.includes(queryParams.sortBy) ? queryParams.sortBy : SORT_OPTIONS.EVENTS_SORT_BY.DATE;
+    const sortOrder = queryParams.sortOrder === SORT_OPTIONS.EVENTS_SORT_ORDER.ASC ? 1 : -1;
+    const sortOptions = { [sortBy]: sortOrder };
+
+    let localEventsQuery = Event.find({}).sort(sortOptions);
+    let countQuery = Event.find({});
+    
     console.log(queryParams);
     if (queryParams.visible) {
-      localEventsQuery = localEventsQuery
-        .where("visible")
-        .equals(queryParams.visible === "true");
+      localEventsQuery = localEventsQuery.where("visible").equals(queryParams.visible === "true");
+      countQuery = countQuery.where("visible").equals(queryParams.visible === "true");
     }
     if (queryParams.isActive) {
-      localEventsQuery = localEventsQuery
-        .where("isActive")
-        .equals(queryParams.isActive === "true");
+      localEventsQuery = localEventsQuery.where("isActive").equals(queryParams.isActive === "true");
+      countQuery = countQuery.where("isActive").equals(queryParams.isActive === "true");
     }
     // Date-based filtering
     if (queryParams.isPast) {
@@ -72,18 +89,16 @@ export const getAllEventsService = async (queryParams = {}) => {
     if (queryParams.startDate) {
       const startDate = new Date(queryParams.startDate);
       if (!isNaN(startDate.getTime())) {
-        localEventsQuery = localEventsQuery
-          .where("end_date")
-          .gte(startDate);
+        localEventsQuery = localEventsQuery.where("end_date").gte(startDate);
+        countQuery = countQuery.where("end_date").gte(startDate);
       }
     }
 
     if (queryParams.endDate) {
       const endDate = new Date(queryParams.endDate);
       if (!isNaN(endDate.getTime())) {
-        localEventsQuery = localEventsQuery
-          .where("end_date")
-          .lte(endDate);
+        localEventsQuery = localEventsQuery.where("end_date").lte(endDate);
+        countQuery = countQuery.where("end_date").lte(endDate);
       }
     }
 
@@ -94,14 +109,16 @@ export const getAllEventsService = async (queryParams = {}) => {
         const startOfDay = new Date(onDate.setHours(0, 0, 0, 0));
         const endOfDay = new Date(onDate.setHours(23, 59, 59, 999));
         
-        localEventsQuery = localEventsQuery
-          .where("end_date")
-          .gte(startOfDay)
-          .lte(endOfDay);
+        localEventsQuery = localEventsQuery.where("end_date").gte(startOfDay).lte(endOfDay);
+        countQuery = countQuery.where("end_date").gte(startOfDay).lte(endOfDay);
       }
     }
 
-    const localEvents = await localEventsQuery.exec();
+    // Get total count for pagination
+    const totalCount = await countQuery.countDocuments();
+    
+    // Apply pagination
+    const localEvents = await localEventsQuery.skip(skip).limit(limit).exec();
     if (!localEvents || localEvents.length === 0) return [];
 
     const eventSlugs = localEvents
@@ -163,10 +180,27 @@ export const getAllEventsService = async (queryParams = {}) => {
     const sortedEvents = mergedEvents.sort((a, b) => {
       const dateA = a.start_date ? new Date(a.start_date) : a.createdAt;
       const dateB = b.start_date ? new Date(b.start_date) : b.createdAt;
-      return dateA - dateB;
+      return sortOrder === 1 ? dateA - dateB : dateB - dateA;
     });
 
-    return sortedEvents;
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    return {
+      events: sortedEvents,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        limit,
+        hasNextPage,
+        hasPrevPage,
+        sortBy,
+        sortOrder: sortOrder === 1 ? 'asc' : 'desc'
+      }
+    };
   } catch (error) {
     throw error;
   }
