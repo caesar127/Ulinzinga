@@ -90,14 +90,57 @@ export const createEvent = async (eventData) => {
   }
 };
 
-export const getEvents = async (organizerToken) => {
+export const getEvents = async (organizerToken, queryParams = {}) => {
   try {
-    const response = await axios.get(BASE_URL, {
+    // Build query parameters for pagination
+    const params = new URLSearchParams();
+    
+    // Add pagination parameters
+    if (queryParams.page) params.append('page', queryParams.page);
+    if (queryParams.limit) params.append('limit', queryParams.limit);
+    if (queryParams.per_page) params.append('per_page', queryParams.per_page);
+    
+    // Add sorting parameters
+    if (queryParams.sortBy) params.append('sort_by', queryParams.sortBy);
+    if (queryParams.sortOrder) params.append('sort_order', queryParams.sortOrder);
+    
+    // Add filter parameters
+    if (queryParams.status) params.append('status', queryParams.status);
+    if (queryParams.isActive !== undefined) params.append('is_active', queryParams.isActive);
+    if (queryParams.isPast !== undefined) params.append('is_past', queryParams.isPast);
+
+    const url = params.toString() ? `${BASE_URL}?${params.toString()}` : BASE_URL;
+    
+    const response = await axios.get(url, {
       headers: buildHeaders(organizerToken),
     });
 
     console.log(response.data);
-    return response.data;
+    
+    // Transform response to include pagination metadata if not provided by API
+    const result = response.data;
+    
+    // If the API doesn't provide pagination metadata, add it based on the response
+    if (!result.pagination && Array.isArray(result.data || result)) {
+      const events = result.data || result;
+      const currentPage = parseInt(queryParams.page) || 1;
+      const limit = parseInt(queryParams.limit) || parseInt(queryParams.per_page) || 20;
+      const totalCount = result.total || events.length;
+      const totalPages = Math.ceil(totalCount / limit);
+      
+      result.pagination = {
+        currentPage,
+        totalPages,
+        totalCount,
+        limit,
+        hasNextPage: currentPage < totalPages,
+        hasPrevPage: currentPage > 1,
+        sortBy: queryParams.sortBy || 'created_at',
+        sortOrder: queryParams.sortOrder || 'desc'
+      };
+    }
+    
+    return result;
   } catch (error) {
     console.error("Get Events Error:", error.response?.data || error.message);
     throw new Error(error.response?.data?.message || error.message);
