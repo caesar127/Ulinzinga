@@ -903,7 +903,7 @@ const openApiSpec = {
     },
 
     // ==================== WALLET ENDPOINTS ====================
-    "/api/wallet": {
+    "/api/user/wallet": {
       get: {
         summary: "Get user wallet",
         tags: ["Wallet"],
@@ -921,7 +921,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/summary": {
+    "/api/user/wallet/summary": {
       get: {
         summary: "Get wallet summary",
         tags: ["Wallet"],
@@ -932,7 +932,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/deposit": {
+    "/api/user/wallet/deposit": {
       post: {
         summary: "Add funds to wallet",
         tags: ["Wallet"],
@@ -958,7 +958,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/spend": {
+    "/api/user/wallet/spend": {
       post: {
         summary: "Spend funds from wallet",
         tags: ["Wallet"],
@@ -984,7 +984,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/transfer": {
+    "/api/user/wallet/transfer": {
       post: {
         summary: "Transfer funds to another user",
         tags: ["Wallet"],
@@ -1011,7 +1011,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/transactions": {
+    "/api/user/wallet/transactions": {
       get: {
         summary: "Get wallet transactions",
         tags: ["Wallet"],
@@ -1057,7 +1057,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/paychangu/callback": {
+    "/api/user/wallet/paychangu/callback": {
       post: {
         summary: "PayChangu payment callback",
         tags: ["Wallet"],
@@ -1082,7 +1082,7 @@ const openApiSpec = {
     },
 
     // ==================== SAVINGS GOALS ENDPOINTS ====================
-    "/api/wallet/savings/eligibility": {
+    "/api/user/wallet/savings/eligibility": {
       get: {
         summary: "Check savings eligibility",
         tags: ["Savings Goals"],
@@ -1092,7 +1092,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/savings/available-events": {
+    "/api/user/wallet/savings/available-events": {
       get: {
         summary: "Get available events for savings",
         tags: ["Savings Goals"],
@@ -1102,7 +1102,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/savings/available-organizers": {
+    "/api/user/wallet/savings/available-organizers": {
       get: {
         summary: "Get available organizers for savings",
         tags: ["Savings Goals"],
@@ -1112,7 +1112,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/savings/goals": {
+    "/api/user/wallet/savings/goals": {
       get: {
         summary: "Get all savings goals",
         tags: ["Savings Goals"],
@@ -1271,7 +1271,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/savings/goals/{goalId}": {
+    "/api/user/wallet/savings/goals/{goalId}": {
       put: {
         summary: "Update a savings goal",
         tags: ["Savings Goals"],
@@ -1324,7 +1324,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/savings/goals/{goalId}/deposit": {
+    "/api/user/wallet/savings/goals/{goalId}/deposit": {
       post: {
         summary: "Deposit to savings goal",
         tags: ["Savings Goals"],
@@ -1358,7 +1358,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/savings/goals/{goalId}/withdraw": {
+    "/api/user/wallet/savings/goals/{goalId}/withdraw": {
       post: {
         summary: "Withdraw from savings goal",
         tags: ["Savings Goals"],
@@ -1392,7 +1392,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/savings/goals/{goalId}/allocate": {
+    "/api/user/wallet/savings/goals/{goalId}/allocate": {
       post: {
         summary: "Allocate funds to event",
         tags: ["Savings Goals"],
@@ -1427,7 +1427,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/savings/goals/{goalId}/available-allocation": {
+    "/api/user/wallet/savings/goals/{goalId}/available-allocation": {
       get: {
         summary: "Get available allocation amount",
         tags: ["Savings Goals"],
@@ -1446,7 +1446,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/wallet/savings/organizer/{organizerId}/events": {
+    "/api/user/wallet/savings/organizer/{organizerId}/events": {
       get: {
         summary: "Get events by organizer for savings",
         tags: ["Savings Goals"],
