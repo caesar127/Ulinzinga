@@ -1,7 +1,7 @@
 import User from "./users.model.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
-import { PAGINATION } from "../core/utils/constants.js";
+import { PAGINATION } from "../../core/utils/constants.js";
 
 export const createUserService = async (userData) => {
   const exists = await User.findOne({
