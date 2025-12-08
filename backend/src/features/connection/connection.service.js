@@ -1,6 +1,7 @@
 import Connection from "./connection.model.js";
 import User from "../users/users.model.js";
 import mongoose from "mongoose";
+import { PAGINATION } from "../core/utils/constants.js";
 
 export const createConnectionRequest = async (userId, targetUserId) => {
   if (userId === targetUserId) {
@@ -92,7 +93,7 @@ export const deleteConnection = async (id, userId) => {
   return true;
 };
 
-export const getSuggestedConnectionsService = async (userId, limit = 2) => {
+export const getSuggestedConnectionsService = async (userId, limit = PAGINATION.CONNECTIONS_SUGGESTED_LIMIT) => {
   const objectId = new mongoose.Types.ObjectId(userId);
 
   const existingConnections = await Connection.find({
@@ -179,7 +180,7 @@ export const getSuggestedConnectionsService = async (userId, limit = 2) => {
 
 export const getAdvancedSuggestedConnectionsService = async (
   userId,
-  limit = 10
+  limit = PAGINATION.CONNECTIONS_DEFAULT_LIMIT
 ) => {
   const objectId = new mongoose.Types.ObjectId(userId);
 
