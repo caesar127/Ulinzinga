@@ -84,7 +84,6 @@ export const requireRole = (roles) => {
   const allowed = Array.isArray(roles) ? roles : [roles];
 
   return (req, res, next) => {
-    console.log("User Role:", req.user);
     if (!req.user)
       return res.status(401).json({ error: "Authentication required" });
 
