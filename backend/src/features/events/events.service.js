@@ -1,6 +1,7 @@
 import axios from "axios";
 import mongoose from "mongoose";
 import Event from "./events.model.js";
+import EventCategory from "../category/category.model.js";
 import { PAGINATION, SORT_OPTIONS } from "../../core/utils/constants.js";
 
 const BASE_URL = "https://dashboard.paychangu.com/mobile/api/public";
@@ -20,18 +21,15 @@ export const getAllEventsService = async (queryParams = {}) => {
         await cleanupOrphanedEvents();
       } catch {}
     }
-
-    // Pagination parameters with validation
+    
     let page = parseInt(queryParams.page) || 1;
     let limit = parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT;
     
-    // Validate and clamp pagination values
     page = Math.max(1, page);
     limit = Math.max(PAGINATION.EVENTS_MIN_LIMIT, Math.min(PAGINATION.EVENTS_MAX_LIMIT, limit));
     
     const skip = (page - 1) * limit;
     
-    // Sort parameters with validation
     const validSortFields = Object.values(SORT_OPTIONS.EVENTS_SORT_BY);
     const sortBy = validSortFields.includes(queryParams.sortBy) ? queryParams.sortBy : SORT_OPTIONS.EVENTS_SORT_BY.DATE;
     const sortOrder = queryParams.sortOrder === SORT_OPTIONS.EVENTS_SORT_ORDER.ASC ? 1 : -1;
@@ -40,7 +38,6 @@ export const getAllEventsService = async (queryParams = {}) => {
     let localEventsQuery = Event.find({}).sort(sortOptions);
     let countQuery = Event.find({});
     
-    console.log(queryParams);
     if (queryParams.visible) {
       localEventsQuery = localEventsQuery.where("visible").equals(queryParams.visible === "true");
       countQuery = countQuery.where("visible").equals(queryParams.visible === "true");
@@ -49,11 +46,10 @@ export const getAllEventsService = async (queryParams = {}) => {
       localEventsQuery = localEventsQuery.where("isActive").equals(queryParams.isActive === "true");
       countQuery = countQuery.where("isActive").equals(queryParams.isActive === "true");
     }
-    // Date-based filtering
+    
     if (queryParams.isPast) {
       const isPastFilter = queryParams.isPast === "true";
       if (isPastFilter) {
-        // Get past events: either marked as past or have end_date in the past
         localEventsQuery = localEventsQuery
           .where({
             $or: [
@@ -68,7 +64,6 @@ export const getAllEventsService = async (queryParams = {}) => {
             ]
           });
       } else {
-        // Get upcoming events: not marked as past and either no end_date or end_date in future
         localEventsQuery = localEventsQuery
           .where({
             $and: [
@@ -84,8 +79,7 @@ export const getAllEventsService = async (queryParams = {}) => {
           });
       }
     }
-
-    // Date range filtering
+    
     if (queryParams.startDate) {
       const startDate = new Date(queryParams.startDate);
       if (!isNaN(startDate.getTime())) {
@@ -101,8 +95,7 @@ export const getAllEventsService = async (queryParams = {}) => {
         countQuery = countQuery.where("end_date").lte(endDate);
       }
     }
-
-    // Filter by events happening on a specific date
+    
     if (queryParams.onDate) {
       const onDate = new Date(queryParams.onDate);
       if (!isNaN(onDate.getTime())) {
@@ -113,11 +106,9 @@ export const getAllEventsService = async (queryParams = {}) => {
         countQuery = countQuery.where("end_date").gte(startOfDay).lte(endOfDay);
       }
     }
-
-    // Get total count for pagination
+    
     const totalCount = await countQuery.countDocuments();
     
-    // Apply pagination
     const localEvents = await localEventsQuery.skip(skip).limit(limit).exec();
     if (!localEvents || localEvents.length === 0) return [];
 
@@ -182,8 +173,7 @@ export const getAllEventsService = async (queryParams = {}) => {
       const dateB = b.start_date ? new Date(b.start_date) : b.createdAt;
       return sortOrder === 1 ? dateA - dateB : dateB - dateA;
     });
-
-    // Calculate pagination metadata
+    
     const totalPages = Math.ceil(totalCount / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
@@ -275,6 +265,7 @@ export const getEventByIdService = async (id) => {
 };
 
 export const syncEvents = async () => {
+  console.log("Syncing events...");
   const options = {
     method: "GET",
     url: "https://dashboard.paychangu.com/general/api/admin/events",
@@ -282,12 +273,13 @@ export const syncEvents = async () => {
     headers: {
       Accept: "application/json",
       Authorization:
-        `Bearer ${process.env.PAYCHANGU_ADMIN_API_KEY}`,
+        `Bearer ${process.env.ULINZINGA_ADMIN_TOKEN}`,
     },
   };
 
   try {
     const { data } = await axios.request(options);
+    console.log("data", data);
     const externalEvents = data?.data || [];
 
     const syncResults = [];
@@ -318,7 +310,39 @@ export const syncEvents = async () => {
           is_past: isPastValue,
           end_date: endDateValue,
           lastSyncedAt: new Date(),
+          interests: [],
         };
+
+        // Store merchant information from PayChangu
+        if (event.merchant) {
+          eventData.merchant = {
+            id: event.merchant.id,
+            name: event.merchant.name,
+            email: event.merchant.email,
+          };
+        }
+
+        // Store balance information from PayChangu
+        if (event.balance) {
+          eventData.balance = {
+            currency: event.balance.currency,
+            ref_id: event.balance.ref_id,
+          };
+        }
+
+        // Handle category mapping to interests
+        if (event.category_id) {
+          try {
+            const category = await EventCategory.findOne({
+              categoryId: event.category_id
+            });
+            if (category) {
+              eventData.interests = [category._id];
+            }
+          } catch (categoryError) {
+            console.warn(`Failed to find category for categoryId ${event.category_id}:`, categoryError.message);
+          }
+        }
 
         if (event.slug) {
           eventData.slug = event.slug;
@@ -707,12 +731,10 @@ export const deleteEventService = async (eventId) => {
   try {
     let event;
     
-    // Try to find by MongoDB ObjectId first
     if (mongoose.Types.ObjectId.isValid(eventId)) {
       event = await Event.findByIdAndDelete(eventId);
     }
     
-    // If not found by ObjectId, try by eventId (string from external API)
     if (!event) {
       event = await Event.findOneAndDelete({ eventId: eventId });
     }
