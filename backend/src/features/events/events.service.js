@@ -21,65 +21,77 @@ export const getAllEventsService = async (queryParams = {}) => {
         await cleanupOrphanedEvents();
       } catch {}
     }
-    
+
     let page = parseInt(queryParams.page) || 1;
     let limit = parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT;
-    
+
     page = Math.max(1, page);
-    limit = Math.max(PAGINATION.EVENTS_MIN_LIMIT, Math.min(PAGINATION.EVENTS_MAX_LIMIT, limit));
-    
+    limit = Math.max(
+      PAGINATION.EVENTS_MIN_LIMIT,
+      Math.min(PAGINATION.EVENTS_MAX_LIMIT, limit)
+    );
+
     const skip = (page - 1) * limit;
-    
+
     const validSortFields = Object.values(SORT_OPTIONS.EVENTS_SORT_BY);
-    const sortBy = validSortFields.includes(queryParams.sortBy) ? queryParams.sortBy : SORT_OPTIONS.EVENTS_SORT_BY.DATE;
-    const sortOrder = queryParams.sortOrder === SORT_OPTIONS.EVENTS_SORT_ORDER.ASC ? 1 : -1;
+    const sortBy = validSortFields.includes(queryParams.sortBy)
+      ? queryParams.sortBy
+      : SORT_OPTIONS.EVENTS_SORT_BY.DATE;
+    const sortOrder =
+      queryParams.sortOrder === SORT_OPTIONS.EVENTS_SORT_ORDER.ASC ? 1 : -1;
     const sortOptions = { [sortBy]: sortOrder };
 
     let localEventsQuery = Event.find({}).sort(sortOptions);
     let countQuery = Event.find({});
-    
+
     if (queryParams.visible) {
-      localEventsQuery = localEventsQuery.where("visible").equals(queryParams.visible === "true");
-      countQuery = countQuery.where("visible").equals(queryParams.visible === "true");
+      localEventsQuery = localEventsQuery
+        .where("visible")
+        .equals(queryParams.visible === "true");
+      countQuery = countQuery
+        .where("visible")
+        .equals(queryParams.visible === "true");
     }
     if (queryParams.isActive) {
-      localEventsQuery = localEventsQuery.where("isActive").equals(queryParams.isActive === "true");
-      countQuery = countQuery.where("isActive").equals(queryParams.isActive === "true");
+      localEventsQuery = localEventsQuery
+        .where("isActive")
+        .equals(queryParams.isActive === "true");
+      countQuery = countQuery
+        .where("isActive")
+        .equals(queryParams.isActive === "true");
     }
-    
+
     if (queryParams.isPast) {
       const isPastFilter = queryParams.isPast === "true";
       if (isPastFilter) {
-        localEventsQuery = localEventsQuery
-          .where({
-            $or: [
-              { isPast: true },
-              { 
-                end_date: { 
-                  $exists: true, 
-                  $ne: null, 
-                  $lt: new Date() 
-                }
-              }
-            ]
-          });
+        localEventsQuery = localEventsQuery.where({
+          $or: [
+            { isPast: true },
+            {
+              end_date: {
+                $exists: true,
+                $ne: null,
+                $lt: new Date(),
+              },
+            },
+          ],
+        });
       } else {
-        localEventsQuery = localEventsQuery
-          .where({
-            $and: [
-              { isPast: false },
-              {
-                $or: [
-                  { end_date: null },
-                  { end_date: { $exists: false } },
-                  { end_date: { $gte: new Date() } }
-                ]
-              }
-            ]
-          });
+        localEventsQuery = localEventsQuery.where({
+          $and: [
+            { isPast: false },
+            {
+              $or: [
+                { end_date: null },
+                { end_date: { $exists: false } },
+                { end_date: { $gte: new Date() } },
+              ],
+            },
+          ],
+        });
       }
     }
-    
+
     if (queryParams.startDate) {
       const startDate = new Date(queryParams.startDate);
       if (!isNaN(startDate.getTime())) {
@@ -95,20 +107,23 @@ export const getAllEventsService = async (queryParams = {}) => {
         countQuery = countQuery.where("end_date").lte(endDate);
       }
     }
-    
+
     if (queryParams.onDate) {
       const onDate = new Date(queryParams.onDate);
       if (!isNaN(onDate.getTime())) {
         const startOfDay = new Date(onDate.setHours(0, 0, 0, 0));
         const endOfDay = new Date(onDate.setHours(23, 59, 59, 999));
-        
-        localEventsQuery = localEventsQuery.where("end_date").gte(startOfDay).lte(endOfDay);
+
+        localEventsQuery = localEventsQuery
+          .where("end_date")
+          .gte(startOfDay)
+          .lte(endOfDay);
         countQuery = countQuery.where("end_date").gte(startOfDay).lte(endOfDay);
       }
     }
-    
+
     const totalCount = await countQuery.countDocuments();
-    
+
     const localEvents = await localEventsQuery.skip(skip).limit(limit).exec();
     if (!localEvents || localEvents.length === 0) return [];
 
@@ -173,7 +188,7 @@ export const getAllEventsService = async (queryParams = {}) => {
       const dateB = b.start_date ? new Date(b.start_date) : b.createdAt;
       return sortOrder === 1 ? dateA - dateB : dateB - dateA;
     });
-    
+
     const totalPages = Math.ceil(totalCount / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
@@ -188,8 +203,8 @@ export const getAllEventsService = async (queryParams = {}) => {
         hasNextPage,
         hasPrevPage,
         sortBy,
-        sortOrder: sortOrder === 1 ? 'asc' : 'desc'
-      }
+        sortOrder: sortOrder === 1 ? "asc" : "desc",
+      },
     };
   } catch (error) {
     throw error;
@@ -265,21 +280,18 @@ export const getEventByIdService = async (id) => {
 };
 
 export const syncEvents = async () => {
-  console.log("Syncing events...");
   const options = {
     method: "GET",
     url: "https://dashboard.paychangu.com/general/api/admin/events",
     params: { per_page: "200" },
     headers: {
       Accept: "application/json",
-      Authorization:
-        `Bearer ${process.env.ULINZINGA_ADMIN_TOKEN}`,
+      Authorization: `Bearer ${process.env.ULINZINGA_ADMIN_TOKEN}`,
     },
   };
 
   try {
     const { data } = await axios.request(options);
-    console.log("data", data);
     const externalEvents = data?.data || [];
 
     const syncResults = [];
@@ -297,7 +309,7 @@ export const syncEvents = async () => {
         } else if (event.end_at) {
           endDateValue = new Date(event.end_at);
         }
-        
+
         let isPastValue = event.is_past === true;
         if (endDateValue && !isNaN(endDateValue.getTime())) {
           isPastValue = endDateValue < new Date();
@@ -334,13 +346,16 @@ export const syncEvents = async () => {
         if (event.category_id) {
           try {
             const category = await EventCategory.findOne({
-              categoryId: event.category_id
+              categoryId: event.category_id,
             });
             if (category) {
               eventData.interests = [category._id];
             }
           } catch (categoryError) {
-            console.warn(`Failed to find category for categoryId ${event.category_id}:`, categoryError.message);
+            console.warn(
+              `Failed to find category for categoryId ${event.category_id}:`,
+              categoryError.message
+            );
           }
         }
 
@@ -480,62 +495,57 @@ export const getLocalEventsService = async (queryParams = {}) => {
         .equals(queryParams.isActive);
     }
     if (queryParams.isPast !== undefined) {
-      const isPastFilter = queryParams.isPast === true || queryParams.isPast === "true";
+      const isPastFilter =
+        queryParams.isPast === true || queryParams.isPast === "true";
       if (isPastFilter) {
-        localEventsQuery = localEventsQuery
-          .where({
-            $or: [
-              { isPast: true },
-              { 
-                end_date: { 
-                  $exists: true, 
-                  $ne: null, 
-                  $lt: new Date() 
-                }
-              }
-            ]
-          });
+        localEventsQuery = localEventsQuery.where({
+          $or: [
+            { isPast: true },
+            {
+              end_date: {
+                $exists: true,
+                $ne: null,
+                $lt: new Date(),
+              },
+            },
+          ],
+        });
       } else {
-        localEventsQuery = localEventsQuery
-          .where({
-            $and: [
-              { isPast: false },
-              {
-                $or: [
-                  { end_date: null },
-                  { end_date: { $exists: false } },
-                  { end_date: { $gte: new Date() } }
-                ]
-              }
-            ]
-          });
+        localEventsQuery = localEventsQuery.where({
+          $and: [
+            { isPast: false },
+            {
+              $or: [
+                { end_date: null },
+                { end_date: { $exists: false } },
+                { end_date: { $gte: new Date() } },
+              ],
+            },
+          ],
+        });
       }
     }
-    
+
     if (queryParams.startDate) {
       const startDate = new Date(queryParams.startDate);
       if (!isNaN(startDate.getTime())) {
-        localEventsQuery = localEventsQuery
-          .where("end_date")
-          .gte(startDate);
+        localEventsQuery = localEventsQuery.where("end_date").gte(startDate);
       }
     }
 
     if (queryParams.endDate) {
       const endDate = new Date(queryParams.endDate);
       if (!isNaN(endDate.getTime())) {
-        localEventsQuery = localEventsQuery
-          .where("end_date")
-          .lte(endDate);
+        localEventsQuery = localEventsQuery.where("end_date").lte(endDate);
       }
     }
-    
+
     if (queryParams.onDate) {
       const onDate = new Date(queryParams.onDate);
       if (!isNaN(onDate.getTime())) {
         const startOfDay = new Date(onDate.setHours(0, 0, 0, 0));
         const endOfDay = new Date(onDate.setHours(23, 59, 59, 999));
-        
+
         localEventsQuery = localEventsQuery
           .where("end_date")
           .gte(startOfDay)
@@ -650,26 +660,26 @@ export const cleanupOrphanedEvents = async () => {
 export const updateEventVisibilityService = async (eventId, isVisible) => {
   try {
     let event;
-    
+
     // Try to find by MongoDB ObjectId first
     if (mongoose.Types.ObjectId.isValid(eventId)) {
       event = await Event.findByIdAndUpdate(
         eventId,
-        { 
+        {
           visible: isVisible,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         { new: true }
       );
     }
-    
+
     // If not found by ObjectId, try by eventId (string from external API)
     if (!event) {
       event = await Event.findOneAndUpdate(
         { eventId: eventId },
-        { 
+        {
           visible: isVisible,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         { new: true }
       );
@@ -681,35 +691,33 @@ export const updateEventVisibilityService = async (eventId, isVisible) => {
 
     return event;
   } catch (error) {
-    throw new Error(
-      `Failed to update event visibility: ${error.message}`
-    );
+    throw new Error(`Failed to update event visibility: ${error.message}`);
   }
 };
 
 export const updateEventStatusService = async (eventId, isActive) => {
   try {
     let event;
-    
+
     // Try to find by MongoDB ObjectId first
     if (mongoose.Types.ObjectId.isValid(eventId)) {
       event = await Event.findByIdAndUpdate(
         eventId,
-        { 
+        {
           isActive: isActive,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         { new: true }
       );
     }
-    
+
     // If not found by ObjectId, try by eventId (string from external API)
     if (!event) {
       event = await Event.findOneAndUpdate(
         { eventId: eventId },
-        { 
+        {
           isActive: isActive,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         { new: true }
       );
@@ -721,20 +729,18 @@ export const updateEventStatusService = async (eventId, isActive) => {
 
     return event;
   } catch (error) {
-    throw new Error(
-      `Failed to update event status: ${error.message}`
-    );
+    throw new Error(`Failed to update event status: ${error.message}`);
   }
 };
 
 export const deleteEventService = async (eventId) => {
   try {
     let event;
-    
+
     if (mongoose.Types.ObjectId.isValid(eventId)) {
       event = await Event.findByIdAndDelete(eventId);
     }
-    
+
     if (!event) {
       event = await Event.findOneAndDelete({ eventId: eventId });
     }
@@ -750,23 +756,21 @@ export const deleteEventService = async (eventId) => {
         id: event._id,
         title: event.title,
         eventId: event.eventId,
-      }
+      },
     };
   } catch (error) {
-    throw new Error(
-      `Failed to delete event: ${error.message}`
-    );
+    throw new Error(`Failed to delete event: ${error.message}`);
   }
 };
 
 export const getUserTicketsByEmailService = async (email) => {
   try {
     const options = {
-      method: 'GET',
-      url: 'https://dashboard.paychangu.com/general/api/admin/events/tickets/by-email',
+      method: "GET",
+      url: "https://dashboard.paychangu.com/general/api/admin/events/tickets/by-email",
       params: { email: email },
       headers: {
-        Accept: 'application/json',
+        Accept: "application/json",
         Authorization: `Bearer ${process.env.ULINZINGA_ADMIN_TOKEN}`,
       },
     };
@@ -775,7 +779,9 @@ export const getUserTicketsByEmailService = async (email) => {
     return data;
   } catch (error) {
     throw new Error(
-      `Failed to get user tickets: ${error.response?.data?.message || error.message}`
+      `Failed to get user tickets: ${
+        error.response?.data?.message || error.message
+      }`
     );
   }
 };
