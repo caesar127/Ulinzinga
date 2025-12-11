@@ -27,7 +27,7 @@ const EventSchema = new mongoose.Schema(
       default: null,
     },
     interests: {
-      type: [String],
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "EventCategory" }],
       default: [],
       index: true,
     },
@@ -43,6 +43,15 @@ const EventSchema = new mongoose.Schema(
     bookmarksCount: { type: Number, default: 0 },
     lastSyncedAt: { type: Date, default: null },
     end_date: { type: Date, default: null },
+    merchant: {
+      id: String,
+      name: String,
+      email: String,
+    },
+    balance: {
+      currency: String,
+      ref_id: String,
+    },
   },
   {
     timestamps: true,
