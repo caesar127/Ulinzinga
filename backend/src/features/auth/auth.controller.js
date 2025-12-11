@@ -65,14 +65,17 @@ export const verifyMerchantToken = async (req, res) => {
     );
 
     const { data } = userResponse.data;
-
+    console.log(data);
     if (!data || !data.user || !data.user.email)
       return res
         .status(400)
         .json({ error: "Invalid user data from PayChangu" });
 
     const paychanguUser = data.user;
-    const business = data.business;
+    const business = data.business || {};
+    const balances = data.balances || [];
+    const merchantReference = data.reference;
+
     let userRole = "organizer";
 
     if (selected_role && ["vendor", "organizer"].includes(selected_role)) {
@@ -83,21 +86,26 @@ export const verifyMerchantToken = async (req, res) => {
 
     let user = await User.findOne({ email: paychanguUser.email });
 
+    const malawiBalances = balances.filter((b) => b.currency_name === "Malawi");
+
     if (user) {
       user.name = paychanguUser.name || user.name;
       user.profile = user.profile || {};
       user.profile.phone = paychanguUser.phone || user.profile.phone;
-      user.changuId = business.reference;
+      user.changuId = business.reference || user.changuId;
+      user.reference = merchantReference || user.reference;
       user.authProvider = "paychangu";
       user.role = userRole;
 
-      if (business) {
+      if (business && business.reference) {
         user.profile.business = {
           reference: business.reference,
           name: business.name,
           live: business.live,
         };
       }
+
+      user.profile.balances = malawiBalances;
 
       await user.save();
     } else {
@@ -106,18 +114,21 @@ export const verifyMerchantToken = async (req, res) => {
         email: paychanguUser.email,
         profile: {
           phone: paychanguUser.phone,
-          business: business
+          business: business.reference
             ? {
                 reference: business.reference,
                 name: business.name,
                 live: business.live,
               }
             : null,
+          balances: malawiBalances,
         },
-        changuId: business.reference,
+        changuId: business.reference || null,
+        reference: merchantReference || null,
         authProvider: "paychangu",
         role: userRole,
       });
+
       await user.save();
     }
 
@@ -137,10 +148,14 @@ export const verifyMerchantToken = async (req, res) => {
         role: user.role,
         profile: user.profile,
         authProvider: user.authProvider,
+        changuId: user.changuId,
+        reference: user.reference,
       },
       business: business,
+      balances: malawiBalances,
     });
   } catch (err) {
+    console.error("Error verifying PayChangu token:", err.message);
     res.status(500).json({ error: "Failed to verify PayChangu token" });
   }
 };
