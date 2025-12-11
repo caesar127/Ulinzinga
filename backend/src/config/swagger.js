@@ -577,7 +577,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/public/events/tickets/by-email/{email}": {
+    "/api/public/tickets/{email}": {
       get: {
         summary: "Get user tickets by email",
         tags: ["Events"],
