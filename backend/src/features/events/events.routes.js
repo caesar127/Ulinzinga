@@ -25,6 +25,6 @@ router.put("/:id/status", updateEventStatus);
 router.delete("/:id", deleteEvent);
 
 // Admin tickets endpoints
-router.get("/tickets/by-email/:email", getUserTicketsByEmail);
+router.get("/tickets/:email", getUserTicketsByEmail);
 
 export default router;
