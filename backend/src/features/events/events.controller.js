@@ -14,7 +14,6 @@ export const getAllEvents = async (req, res) => {
   try {
     const queryParams = req.query;
     const result = await getAllEventsService(queryParams);
-
     return res.status(200).json({
       status: "success",
       message: "Events fetched successfully",
@@ -33,14 +32,13 @@ export const getAllEvents = async (req, res) => {
 export const cleanupOrphanedEventsController = async (req, res) => {
   try {
     const result = await cleanupOrphanedEvents();
-    
+
     return res.status(200).json({
       status: "success",
       message: "Orphaned events cleanup completed",
       data: result,
     });
   } catch (error) {
-    console.error("Cleanup orphaned events error:", error);
     return res.status(500).json({
       status: "error",
       message: "Failed to cleanup orphaned events",
@@ -52,14 +50,13 @@ export const cleanupOrphanedEventsController = async (req, res) => {
 export const syncEventsController = async (req, res) => {
   try {
     const result = await syncEvents();
-    
+
     return res.status(200).json({
       status: "success",
       message: "Events synchronized successfully",
       data: result,
     });
   } catch (error) {
-    console.error("Sync events error:", error);
     return res.status(500).json({
       status: "error",
       message: "Failed to synchronize events",
@@ -123,10 +120,9 @@ export const initiatePurchase = async (req, res) => {
     };
 
     const result = await purchaseTicket(purchaseData);
-    
+
     res.status(200).json(result);
   } catch (error) {
-    console.error("Purchase ticket error:", error);
     res.status(500).json({
       success: false,
       message:
@@ -143,7 +139,7 @@ export const updateEventVisibility = async (req, res) => {
     const { id } = req.params;
     const { isVisible } = req.body;
 
-    if (typeof isVisible !== 'boolean') {
+    if (typeof isVisible !== "boolean") {
       return res.status(400).json({
         success: false,
         message: "isVisible must be a boolean value",
@@ -158,7 +154,6 @@ export const updateEventVisibility = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Update event visibility error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to update event visibility",
@@ -172,7 +167,7 @@ export const updateEventStatus = async (req, res) => {
     const { id } = req.params;
     const { isActive } = req.body;
 
-    if (typeof isActive !== 'boolean') {
+    if (typeof isActive !== "boolean") {
       return res.status(400).json({
         success: false,
         message: "isActive must be a boolean value",
@@ -187,7 +182,6 @@ export const updateEventStatus = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Update event status error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to update event status",
@@ -208,7 +202,6 @@ export const deleteEvent = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Delete event error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to delete event",
@@ -236,7 +229,6 @@ export const getUserTicketsByEmail = async (req, res) => {
       data: tickets,
     });
   } catch (error) {
-    console.error("Get user tickets by email error:", error);
     return res.status(error.response?.status || 500).json({
       success: false,
       message: "Failed to fetch user tickets",
