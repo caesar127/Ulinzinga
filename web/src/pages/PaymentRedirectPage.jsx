@@ -2,54 +2,26 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircleIcon, XCircleIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
 import { motion } from "framer-motion";
-import { useHandlePaymentCallbackMutation } from "../features/wallet/walletApiSlice";
 
 const PaymentRedirectPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [paymentStatus, setPaymentStatus] = useState("processing");
   const [paymentDetails, setPaymentDetails] = useState(null);
-  const [handlePaymentCallback, { isLoading: isUpdatingPayment }] = useHandlePaymentCallbackMutation();
 
-  useEffect(() => {
-    // Get payment details from URL parameters
-    const status = searchParams.get("status");
-    const txRef = searchParams.get("tx_ref");
-    const amount = searchParams.get("amount");
-    const message = searchParams.get("message");
+  // useEffect(() => {
+  //   const status = searchParams.get("status");
+  //   const txRef = searchParams.get("tx_ref");
+  //   const amount = searchParams.get("amount");
+  //   const message = searchParams.get("message");
 
-    setPaymentDetails({
-      status,
-      txRef,
-      amount,
-      message
-    });
-
-    // Always set as success since PaymentRedirectPage is always success
-    setPaymentStatus("success");
+  //   setPaymentDetails({ status, txRef, amount, message });
     
-    // Call payment callback to update transaction status and wallet balance
-    const updatePaymentStatus = async () => {
-      try {
-        await handlePaymentCallback({
-          tx_ref: txRef,
-          status: "successful",
-          amount: parseInt(amount)
-        }).unwrap();
-      } catch (error) {
-        console.error("Failed to update payment status:", error);
-      }
-    };
-    updatePaymentStatus();
-  }, [searchParams, handlePaymentCallback]);
+  //   setPaymentStatus("success");
+  // }, [searchParams]);
 
-  const handleReturnToWallet = () => {
-    navigate("/profile");
-  };
-
-  const handleReturnHome = () => {
-    navigate("/");
-  };
+  const handleReturnToWallet = () => navigate("/profile");
+  const handleReturnHome = () => navigate("/");
 
   const getStatusConfig = () => {
     switch (paymentStatus) {
@@ -58,8 +30,8 @@ const PaymentRedirectPage = () => {
           icon: CheckCircleIcon,
           iconColor: "text-green-500",
           bgColor: "bg-green-50",
-          title: "Payment Successful!",
-          message: "Your money has been successfully added to your wallet.",
+          title: "Your Transaction Has Been Processed!",
+          message: "You may now close this page.",
           buttonText: "View My Wallet",
           buttonAction: handleReturnToWallet
         };
@@ -69,28 +41,19 @@ const PaymentRedirectPage = () => {
           iconColor: "text-red-500",
           bgColor: "bg-red-50",
           title: "Payment Failed",
-          message: "There was an issue processing your payment. Please try again.",
+          message: "There was an issue processing your payment.",
           buttonText: "Try Again",
           buttonAction: handleReturnToWallet
         };
       case "processing":
+      default:
         return {
           icon: ArrowPathIcon,
           iconColor: "text-yellow-500",
           bgColor: "bg-yellow-50",
-          title: "Processing Payment",
-          message: "Your payment is being processed. This may take a few moments.",
+          title: "Processed",
+          message: "Your payment has been processed.",
           buttonText: "Check Wallet",
-          buttonAction: handleReturnToWallet
-        };
-      default:
-        return {
-          icon: ArrowPathIcon,
-          iconColor: "text-gray-500",
-          bgColor: "bg-gray-50",
-          title: "Unknown Status",
-          message: "Payment status could not be determined.",
-          buttonText: "Return to Wallet",
           buttonAction: handleReturnToWallet
         };
     }
@@ -142,10 +105,15 @@ const PaymentRedirectPage = () => {
               {paymentDetails.status && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Status:</span>
-                  <span className={`font-semibold capitalize ${
-                    paymentDetails.status === 'success' ? 'text-green-600' : 
-                    paymentDetails.status === 'failed' ? 'text-red-600' : 'text-yellow-600'
-                  }`}>
+                  <span
+                    className={`font-semibold capitalize ${
+                      paymentDetails.status === "success"
+                        ? "text-green-600"
+                        : paymentDetails.status === "failed"
+                        ? "text-red-600"
+                        : "text-yellow-600"
+                    }`}
+                  >
                     {paymentDetails.status}
                   </span>
                 </div>
@@ -153,8 +121,7 @@ const PaymentRedirectPage = () => {
             </div>
           </div>
         )}
-
-        {/* Action Buttons */}
+        
         <div className="space-y-3">
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -172,8 +139,7 @@ const PaymentRedirectPage = () => {
             Return Home
           </motion.button>
         </div>
-
-        {/* Additional Info */}
+        
         <div className="mt-6 pt-6 border-t border-gray-200">
           <p className="text-xs text-gray-500">
             Need help? Contact our support team if you continue to experience issues.
