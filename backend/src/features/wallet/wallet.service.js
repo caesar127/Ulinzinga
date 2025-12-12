@@ -588,6 +588,7 @@ export const getTransactions = async (userId, filters = {}) => {
 };
 
 export const handlePayChanguCallback = async (callbackData) => {
+  console.log(callbackData)
   const { tx_ref, status } = callbackData;
 
   const transaction = await Transaction.findOne({ tx_ref });
