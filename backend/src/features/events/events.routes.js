@@ -10,7 +10,7 @@ import {
   deleteEvent,
   getUserTicketsByEmail,
 } from "./events.controller.js";
-import ticketsRoutes from "../tickets/tickets.routes.js";
+// import ticketsRoutes from "../tickets/tickets.routes.js";
 
 const router = express.Router();
 
@@ -29,6 +29,6 @@ router.delete("/:id", deleteEvent);
 router.get("/tickets/:email", getUserTicketsByEmail);
 
 // New tickets module routes - mounted at /events/:id/tickets
-router.use("/:id/tickets", ticketsRoutes);
+// router.use("/:id/tickets", ticketsRoutes);
 
 export default router;
