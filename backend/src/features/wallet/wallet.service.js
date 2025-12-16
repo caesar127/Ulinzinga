@@ -239,11 +239,9 @@ export const getAvailableAllocationAmount = async (userId, goalId) => {
 
 export const createSavingsGoal = async (userId, goalData) => {
   const wallet = await getWalletByUser(userId);
+  console.log("Raw goal data:", goalData);
 
-  // if (wallet.regularBalance <= 0) {
-  //   throw new Error("Insufficient balance.");
-  // }
-
+  // Validate event if provided
   let eventValidation = null;
   if (goalData.event_slug) {
     eventValidation = await validateEventSlug(goalData.event_slug);
@@ -251,35 +249,51 @@ export const createSavingsGoal = async (userId, goalData) => {
       throw new Error(eventValidation.message);
     }
   }
-
-  // Calculate target amount based on saving type
-  let calculatedTargetAmount = goalData.targetAmount;
-  if (
-    goalData.savingType === "ticket_inclusive" &&
-    goalData.ticketType &&
-    goalData.ticketQuantity
-  ) {
-    calculatedTargetAmount =
-      goalData.ticketType.price * goalData.ticketQuantity;
-  } else if (
-    goalData.savingType === "complete_event" &&
-    goalData.ticketType &&
-    goalData.ticketQuantity
-  ) {
-    const ticketAmount = goalData.ticketType.price * goalData.ticketQuantity;
-    const additionalSpending = goalData.additionalSpending || 0;
-    calculatedTargetAmount = ticketAmount + additionalSpending;
+console.log(eventValidation)
+  // Ensure ticketType is an object, otherwise set to null
+  let ticketType = null;
+  if (goalData.ticketType && typeof goalData.ticketType === "object") {
+    ticketType = goalData.ticketType;
   }
 
-  // Set cutoff date for ticket goals (3 days before event start)
-  let cutoffDate = goalData.cutoffDate;
+  // Calculate targetAmount safely
+  let calculatedTargetAmount = Number(goalData.targetAmount) || 0;
   if (
     (goalData.savingType === "ticket_inclusive" ||
       goalData.savingType === "complete_event") &&
-    eventValidation?.event
+    ticketType?.price &&
+    goalData.ticketQuantity
+  ) {
+    const ticketAmount = Number(ticketType.price) * goalData.ticketQuantity;
+    const additionalSpending = Number(goalData.additionalSpending) || 0;
+    calculatedTargetAmount =
+      goalData.savingType === "complete_event"
+        ? ticketAmount + additionalSpending
+        : ticketAmount;
+  }
+
+  // Set cutoff date safely and validate requirement for ticket_inclusive
+  let cutoffDate = goalData.cutoffDate ? new Date(goalData.cutoffDate) : null;
+  
+  if (goalData.savingType === "ticket_inclusive" && !cutoffDate) {
+    if (eventValidation?.event?.start_date) {
+      const eventStartDate = new Date(eventValidation.event.start_date);
+      if (!isNaN(eventStartDate)) {
+        cutoffDate = new Date(eventStartDate.getTime() - 3 * 24 * 60 * 60 * 1000); // 3 days before
+      } else {
+        throw new Error("Invalid event start date for auto-generating cutoff date");
+      }
+    } else {
+      throw new Error("cutoffDate is required for ticket_inclusive saving type when event start date is not available");
+    }
+  } else if (
+    (goalData.savingType === "ticket_inclusive" || goalData.savingType === "complete_event") &&
+    eventValidation?.event?.start_date
   ) {
     const eventStartDate = new Date(eventValidation.event.start_date);
-    cutoffDate = new Date(eventStartDate.getTime() - 3 * 24 * 60 * 60 * 1000); // 3 days before
+    if (!isNaN(eventStartDate) && !cutoffDate) {
+      cutoffDate = new Date(eventStartDate.getTime() - 3 * 24 * 60 * 60 * 1000); // 3 days before
+    }
   }
 
   // Validate organizer if provided
@@ -287,12 +301,8 @@ export const createSavingsGoal = async (userId, goalData) => {
   if (goalData.organizerId) {
     const User = (await import("../users/users.model.js")).default;
     const organizer = await User.findById(goalData.organizerId);
-    if (!organizer) {
-      throw new Error("Organizer not found");
-    }
-    if (organizer.role !== "organizer") {
-      throw new Error("Selected user is not an organizer");
-    }
+    if (!organizer) throw new Error("Organizer not found");
+    if (organizer.role !== "organizer") throw new Error("Selected user is not an organizer");
     organizerData = {
       organizerId: goalData.organizerId,
       organizerName: organizer.name || organizer.username,
@@ -305,11 +315,11 @@ export const createSavingsGoal = async (userId, goalData) => {
     targetAmount: calculatedTargetAmount,
     currentAmount: 0,
     isCompleted: false,
-    targetDate: goalData.targetDate,
+    targetDate: goalData.targetDate ? new Date(goalData.targetDate) : null,
     savingType: goalData.savingType,
     event_slug: goalData.event_slug,
     ticketTypeId: goalData.ticketTypeId,
-    ticketType: goalData.ticketType,
+    ticketType: ticketType,
     ticketQuantity: goalData.ticketQuantity || 1,
     additionalSpending: goalData.additionalSpending || 0,
     cutoffDate,
@@ -319,11 +329,14 @@ export const createSavingsGoal = async (userId, goalData) => {
     ...organizerData,
   };
 
+  console.log("Processed goal:", newGoal);
+
   wallet.savingsGoals.push(newGoal);
   await wallet.save();
 
   return wallet.savingsGoals[wallet.savingsGoals.length - 1];
 };
+
 
 export const depositMoney = async (userId, amount, description, event_slug) => {
   const wallet = await getWalletByUser(userId);
@@ -654,10 +667,41 @@ export const updateSavingsGoal = async (userId, goalId, updates) => {
     throw new Error("Savings goal not found");
   }
 
+  // Validate event if provided
+  let eventValidation = null;
   if (updates.event_slug && updates.event_slug !== goal.event_slug) {
-    const eventValidation = await validateEventSlug(updates.event_slug);
+    eventValidation = await validateEventSlug(updates.event_slug);
     if (!eventValidation.isValid) {
       throw new Error(`Invalid event slug: ${eventValidation.message}`);
+    }
+  }
+
+  // Validate cutoff date requirement for ticket_inclusive
+  if (updates.savingType === "ticket_inclusive" || goal.savingType === "ticket_inclusive") {
+    let cutoffDate = updates.cutoffDate !== undefined ? updates.cutoffDate : goal.cutoffDate;
+    
+    if (!cutoffDate) {
+      if (eventValidation?.event?.start_date || updates.event_slug === goal.event_slug) {
+        const Event = (await import("../events/events.model.js")).default;
+        const eventForCutoff = eventValidation?.event || await Event.findOne({ slug: goal.event_slug });
+        if (eventForCutoff?.start_date) {
+          const eventStartDate = new Date(eventForCutoff.start_date);
+          if (!isNaN(eventStartDate)) {
+            cutoffDate = new Date(eventStartDate.getTime() - 3 * 24 * 60 * 60 * 1000); // 3 days before
+          } else {
+            throw new Error("Invalid event start date for auto-generating cutoff date");
+          }
+        } else {
+          throw new Error("cutoffDate is required for ticket_inclusive saving type");
+        }
+      } else {
+        throw new Error("cutoffDate is required for ticket_inclusive saving type");
+      }
+    }
+    
+    // Update cutoff date if it was auto-generated or provided
+    if (cutoffDate) {
+      goal.cutoffDate = cutoffDate;
     }
   }
 
@@ -688,7 +732,9 @@ export const updateSavingsGoal = async (userId, goalId, updates) => {
       updates.additionalSpending !== goal.additionalSpending)
   ) {
     const newQuantity = updates.ticketQuantity || goal.ticketQuantity || 1;
-    const ticketType = updates.ticketType || goal.ticketType;
+    const ticketType = (updates.ticketType && typeof updates.ticketType === "object")
+      ? updates.ticketType
+      : goal.ticketType;
     const additionalSpending =
       updates.additionalSpending !== undefined
         ? updates.additionalSpending
@@ -719,7 +765,9 @@ export const updateSavingsGoal = async (userId, goalId, updates) => {
   if (updates.savingType) goal.savingType = updates.savingType;
   if (updates.event_slug) goal.event_slug = updates.event_slug;
   if (updates.ticketTypeId) goal.ticketTypeId = updates.ticketTypeId;
-  if (updates.ticketType) goal.ticketType = updates.ticketType;
+  if (updates.ticketType && typeof updates.ticketType === "object") {
+    goal.ticketType = updates.ticketType;
+  }
   if (updates.ticketQuantity) goal.ticketQuantity = updates.ticketQuantity;
   if (updates.additionalSpending !== undefined)
     goal.additionalSpending = updates.additionalSpending;
