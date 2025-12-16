@@ -43,6 +43,7 @@ const EventSchema = new mongoose.Schema(
     bookmarksCount: { type: Number, default: 0 },
     lastSyncedAt: { type: Date, default: null },
     end_date: { type: Date, default: null },
+    start_date: { type: Date, default: null },
     merchant: {
       id: String,
       name: String,
