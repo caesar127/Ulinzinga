@@ -302,12 +302,11 @@ export const syncEvents = async () => {
         let endDateValue = null;
         if (event.end_date) {
           endDateValue = new Date(event.end_date);
-        } else if (event.endDate) {
-          endDateValue = new Date(event.endDate);
-        } else if (event.ends_at) {
-          endDateValue = new Date(event.ends_at);
-        } else if (event.end_at) {
-          endDateValue = new Date(event.end_at);
+        }
+
+        let startDateValue = null;
+        if (event.start_date) {
+          startDateValue = new Date(event.start_date);
         }
 
         let isPastValue = event.is_past === true;
@@ -320,6 +319,7 @@ export const syncEvents = async () => {
           visible: event.featured === true,
           isActive: event.is_active === true,
           is_past: isPastValue,
+          start_date: startDateValue,
           end_date: endDateValue,
           lastSyncedAt: new Date(),
           interests: [],
