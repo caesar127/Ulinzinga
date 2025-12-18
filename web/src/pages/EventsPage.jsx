@@ -1,20 +1,39 @@
-import React from "react";
+import React, { useState } from "react";
 import searchicon from "../assets/icons/searchicon.svg";
 import searchicon2 from "../assets/icons/searchicon(1).svg";
 import EventsFilterBar from "../components/EventsFilterBar";
 import { useSelector } from "react-redux";
 import { useGetEventsQuery } from "../features/events/eventsApiSlice";
 import EventCard from "../components/EventCard";
+import Pagination from "../shared/components/ui/Pagination";
 
 function EventsPage() {
   const { user } = useSelector((state) => state.auth);
   const { events } = useSelector((state) => state.event);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLimit, setPageLimit] = useState(20);
+  const [filters, setFilters] = useState({
+    isPast: false,
+    visible: true,
+    isActive: true,
+  });
 
   const { data, isLoading, isError, error } = useGetEventsQuery({
-    page: 1,
-    limit: 20,
-    is_past: false,
+    page: currentPage,
+    limit: pageLimit,
+    ...filters,
   });
+  
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handleLimitChange = (newLimit) => {
+    setPageLimit(newLimit);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="w-full px-24">
@@ -92,12 +111,55 @@ function EventsPage() {
       </div>
       <div className="py-6 space-y-12">
         <EventsFilterBar />
-
-        <div className="grid grid-cols-4 gap-12 mt-8">
-          {events.map((event) => (
-            <EventCard key={event._id} event={event} />
-          ))}
-        </div>
+        
+        {isLoading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFB300]"></div>
+          </div>
+        )}
+        
+        {isError && (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-red-600 text-center">
+              <p className="text-lg font-medium">Error loading events</p>
+              <p className="text-sm">{error?.message || 'Something went wrong'}</p>
+            </div>
+          </div>
+        )}
+        
+        {!isLoading && !isError && data?.events && data.events.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+              {data.events.map((event) => (
+                <EventCard key={event._id || event.id} event={event} />
+              ))}
+            </div>
+            
+            {data.pagination && data.pagination.totalPages > 1 && (
+              <div className="mt-12 pt-6 border-t border-gray-200">
+                <Pagination
+                  currentPage={data.pagination.currentPage}
+                  totalPages={data.pagination.totalPages}
+                  totalCount={data.pagination.totalCount}
+                  limit={data.pagination.limit}
+                  hasNextPage={data.pagination.hasNextPage}
+                  hasPrevPage={data.pagination.hasPrevPage}
+                  onPageChange={handlePageChange}
+                  onLimitChange={handleLimitChange}
+                />
+              </div>
+            )}
+          </>
+        )}
+        
+        {!isLoading && !isError && (!data?.events || data.events.length === 0) && (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-center">
+              <p className="text-lg font-medium text-gray-600">No events found</p>
+              <p className="text-sm text-gray-500 mt-2">Try adjusting your filters or check back later</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
