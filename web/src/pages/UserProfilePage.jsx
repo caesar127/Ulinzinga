@@ -24,6 +24,7 @@ import {
 import {
   useGetEventsQuery,
   useGetEventByIdQuery,
+  useGiftTicketMutation,
 } from "../features/events/eventsApiSlice";
 
 // Component imports
@@ -38,14 +39,18 @@ import { PostsTab, EventsTab } from "../components/profile/ProfileContent";
 import AddMoneyModal from "../components/profile/AddMoneyModal";
 import AddToSavingsModal from "../components/profile/AddToSavingsModal";
 import CreateGoalModal from "../components/profile/CreateGoalModal";
-import { handleErrorToast2, handleSuccessToast2, handleToast2 } from "../utils/toasts";
+import GiftTicketModal from "../components/profile/GiftTicketModal";
+import {
+  handleErrorToast2,
+  handleSuccessToast2,
+  handleToast2,
+} from "../utils/toasts";
 
 export default function ProfilePage() {
   const { user: authUser } = useSelector((state) => state.auth);
   const { connections } = useSelector((state) => state.connections);
   const { events } = useSelector((state) => state.event);
-
-  // API queries
+  
   const { data: userProfile, isLoading: isUserLoading } =
     useGetCurrentUserProfileQuery(authUser?._id);
   const { data: connectionsData, isLoading: isConnectionsLoading } =
@@ -70,6 +75,7 @@ export default function ProfilePage() {
   const [addFundsToWallet] = useAddFundsToWalletMutation();
   const [createSavingsGoal] = useCreateSavingsGoalMutation();
   const [depositToSavings] = useDepositToSavingsMutation();
+  const [giftTicket] = useGiftTicketMutation();
 
   // Local state
   const [connectionsTab, setConnectionsTab] = useState("connections");
@@ -90,11 +96,26 @@ export default function ProfilePage() {
     targetAmount: "",
     targetDate: "",
   });
-
-  // Event data
+  
+  const [showGiftTicketModal, setShowGiftTicketModal] = useState(false);
+  const [giftTicketData, setGiftTicketData] = useState({
+    selectedEvent: "",
+    selectedTicketType: "",
+    selectedConnection: "",
+    recipientName: "",
+    recipientEmail: "",
+    quantity: 1,
+    giftMessage: "",
+  });
+  const [isGiftingTicket, setIsGiftingTicket] = useState(false);
+  
   const { data: upcomingData } = useGetEventsQuery({
     per_page: "20",
-    is_past: false,
+    page: 1,
+    limit: 20,
+    isPast: false,
+    visible: true,
+    isActive: true,
   });
 
   const selectedEventForTickets = events?.find(
@@ -105,8 +126,7 @@ export default function ProfilePage() {
     selectedEventForTickets?.slug,
     { skip: !selectedEventForTickets?.slug }
   );
-
-  // Computed values
+  
   const balance =
     walletSummary?.regularBalance ||
     wallet?.regularBalance ||
@@ -114,8 +134,7 @@ export default function ProfilePage() {
     0;
   const totalSavings = walletSummary?.totalSavings || 0;
   const currentUser = userProfile || authUser;
-
-  // Handler functions
+  
   const handleConnectUser = async (targetUserId) => {
     try {
       await sendConnectionRequest({ targetUserId }).unwrap();
@@ -277,6 +296,78 @@ export default function ProfilePage() {
     setShowAddToSavingsModal(true);
   };
 
+  const handleGiftTicket = () => {
+    setShowGiftTicketModal(true);
+  };
+
+  const handleConfirmGiftTicket = async () => {
+    if (
+      !giftTicketData.selectedEvent ||
+      !giftTicketData.selectedTicketType ||
+      !giftTicketData.selectedConnection
+    ) {
+      handleToast2("Please fill in all required fields");
+      return;
+    }
+
+    setIsGiftingTicket(true);
+    setShowGiftTicketModal(false);
+
+    try {
+      const selectedConnection = connections?.find(
+        (c) => c._id === giftTicketData.selectedConnection
+      );
+      const selectedEvent = events?.find(
+        (e) => e.slug === giftTicketData.selectedEvent
+      );
+
+      if (!selectedConnection || !selectedEvent) {
+        handleToast2("Invalid connection or event selected");
+        return;
+      }
+
+      const giftData = {
+        eventSlug: giftTicketData.selectedEvent,
+        package_id: giftTicketData.selectedTicketType,
+        name: selectedConnection.name,
+        email: selectedConnection.email,
+        quantity: giftTicketData.quantity,
+        isGift: true,
+        recipientName: selectedConnection.name,
+        recipientEmail: selectedConnection.email,
+        giftMessage: giftTicketData.giftMessage,
+        redirect_url: window.location.origin + "/ticketpurchase",
+        cancel_url: window.location.origin + "/ticketpurchasecancel",
+      };
+
+      const response = await giftTicket(giftData).unwrap();
+
+      if (response?.payment?.checkout_url) {
+        window.location.href = response.payment.checkout_url;
+      }
+
+      handleSuccessToast2(
+        `Gift ticket purchase initiated for ${selectedConnection.name}`
+      );
+      
+      setGiftTicketData({
+        selectedEvent: "",
+        selectedTicketType: "",
+        selectedConnection: "",
+        recipientName: "",
+        recipientEmail: "",
+        quantity: 1,
+        giftMessage: "",
+      });
+    } catch (error) {
+      handleErrorToast2(
+        error?.data?.message || "Failed to purchase gift ticket"
+      );
+    } finally {
+      setIsGiftingTicket(false);
+    }
+  };
+
   const handleConfirmAddToSavings = async () => {
     if (!savingsAmount || parseFloat(savingsAmount) <= 0) {
       alert("Please enter a valid amount");
@@ -300,11 +391,11 @@ export default function ProfilePage() {
         goalId: selectedGoalForSavings.id,
         amount: amountValue,
       }).unwrap();
-console.log(amountValue, selectedGoalForSavings);
+      console.log(amountValue, selectedGoalForSavings);
       handleSuccessToast2(
-        `Successfully added MWK ${parseFloat(amountValue).toLocaleString()} to ${
-          selectedGoalForSavings.name
-        }`
+        `Successfully added MWK ${parseFloat(
+          amountValue
+        ).toLocaleString()} to ${selectedGoalForSavings.name}`
       );
       await refetchSavingsGoals();
     } catch (error) {
@@ -323,7 +414,6 @@ console.log(amountValue, selectedGoalForSavings);
 
   return (
     <div className="h-screen bg-[#ffff] grid grid-cols-11 px-10">
-      {/* LEFT SIDEBAR */}
       <div className="col-span-3 px-1 pt-2 overflow-y-auto custom-scrollbar min-h-screen pr-4">
         <ConnectionsSidebar
           connectionsTab={connectionsTab}
@@ -340,17 +430,24 @@ console.log(amountValue, selectedGoalForSavings);
           handleAcceptRequest={handleAcceptRequest}
           handleDeclineRequest={handleDeclineRequest}
         />
+        <GiftTicketModal
+          isOpen={showGiftTicketModal}
+          onClose={() => setShowGiftTicketModal(false)}
+          events={events}
+          connections={connections}
+          giftTicketData={giftTicketData}
+          setGiftTicketData={setGiftTicketData}
+          handleConfirmGiftTicket={handleConfirmGiftTicket}
+          isGiftingTicket={isGiftingTicket}
+        />
       </div>
-
-      {/* MAIN WALLET/PROFILE AREA */}
+      
       <div className="col-span-5 overflow-y-auto custom-scrollbar px-6 pt-6 min-h-screen bg-[#F3F3F3]">
-        {/* Profile Header */}
-        <ProfileHeader 
-          currentUser={currentUser} 
+        <ProfileHeader
+          currentUser={currentUser}
           onProfileUpdate={handleProfileUpdate}
         />
-
-        {/* Name & Stats */}
+        
         <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-[700] text-[#2D2D2D]">
@@ -363,18 +460,15 @@ console.log(amountValue, selectedGoalForSavings);
 
           <ProfileStats currentUser={currentUser} connections={connections} />
         </div>
-
-        {/* Tabs */}
+        
         <ProfileTabs profileTab={profileTab} setProfileTab={setProfileTab} />
-
-        {/* Posts / Events Section */}
+        
         <div className="mt-6">
           {profileTab === "posts" && <PostsTab />}
           {profileTab === "events" && <EventsTab />}
         </div>
       </div>
-
-      {/* RIGHT WALLET SIDEBAR */}
+      
       <div className="col-span-3 overflow-y-auto custom-scrollbar px-4 pt-2 min-h-screen">
         <WalletSidebar
           balance={balance}
@@ -389,10 +483,10 @@ console.log(amountValue, selectedGoalForSavings);
           refetchSavingsGoals={refetchSavingsGoals}
           isTransactionsLoading={isTransactionsLoading}
           transactions={transactions}
+          handleGiftTicket={handleGiftTicket}
         />
       </div>
-
-      {/* Modals */}
+      
       <AddMoneyModal
         isOpen={showAddMoneyModal}
         onClose={() => setShowAddMoneyModal(false)}
@@ -425,6 +519,17 @@ console.log(amountValue, selectedGoalForSavings);
         detailedEvent={detailedEvent?.data}
         handleConfirmCreateGoal={handleConfirmCreateGoal}
         isCreatingGoal={isCreatingGoal}
+      />
+
+      <GiftTicketModal
+        isOpen={showGiftTicketModal}
+        onClose={() => setShowGiftTicketModal(false)}
+        events={events}
+        connections={connections}
+        giftTicketData={giftTicketData}
+        setGiftTicketData={setGiftTicketData}
+        handleConfirmGiftTicket={handleConfirmGiftTicket}
+        isGiftingTicket={isGiftingTicket}
       />
     </div>
   );
