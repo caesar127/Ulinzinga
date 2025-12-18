@@ -24,15 +24,23 @@ function SignInPage() {
     }
 
     try {
-      await userSignIn({
+      const response = await userSignIn({
         email,
         password,
-      })
-        .unwrap()
-        .then(() => {
-          handleSuccessToast2("Logged in successfully");
-          navigate("/");
-        });
+      }).unwrap();
+      
+      handleSuccessToast2("Logged in successfully");
+      
+      const userRole = response?.user?.role;
+      if (userRole === 'admin') {
+        navigate("/admin/dashboard");
+      } else if (userRole === 'organizer') {
+        navigate("/organizer/dashboard");
+      } else if (userRole === 'vendor') {
+        navigate("/vendor/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       handleErrorToast2(
         error?.data?.message || error?.message || "Login failed"
