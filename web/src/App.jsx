@@ -13,6 +13,8 @@ import UserProfilePage from "./pages/UserProfilePage";
 import ProtectedRoute from "./shared/ProtectedRoute";
 
 import { OrganizerRoutes } from "./modules/organizer";
+import { AdminRoutes } from "./modules/admin";
+import { VendorRoutes } from "./modules/vendor";
 import EmptyLayout from "./shared/layout/EmptyLayout";
 import MainLayout from "./shared/layout/MainLayout";
 import EventDetailsPage from "./pages/EventDetailsPage";
@@ -31,6 +33,8 @@ function App() {
           <Route path="/payment/redirect" element={<PaymentRedirectPage />} />
 
           <Route path="/organizer/*" element={<OrganizerRoutes />} />
+          <Route path="/admin/*" element={<AdminRoutes />} />
+          <Route path="/vendor/*" element={<VendorRoutes />} />
         </Route>
 
         <Route element={<MainLayout />}>
