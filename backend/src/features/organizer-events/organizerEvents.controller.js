@@ -11,7 +11,7 @@ import {
 export const create = async (req, res) => {
   try {
     const organizerToken = req.headers.authorization?.replace("Bearer ", "");
-    console.log(organizerToken)
+    console.log(organizerToken);
     console.log(req.body);
     const {
       title,
@@ -81,7 +81,9 @@ export const create = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: isDraft ? "Event draft saved successfully" : "Event created successfully",
+      message: isDraft
+        ? "Event draft saved successfully"
+        : "Event created successfully",
       data: result,
     });
   } catch (error) {
@@ -106,11 +108,10 @@ export const list = async (req, res) => {
     }
 
     const result = await getEvents(organizerToken, queryParams);
-
     res.status(200).json({
       success: true,
       message: "Events retrieved successfully",
-      data: result.data || result,
+      data: result.data,
       pagination: result.pagination,
     });
   } catch (error) {
@@ -124,22 +125,13 @@ export const list = async (req, res) => {
 
 export const getOne = async (req, res) => {
   try {
-    const { id } = req.params;
-    const organizerToken = req.headers.authorization?.replace("Bearer ", "");
-
-    if (!organizerToken) {
-      return res.status(400).json({
-        success: false,
-        message: "Organizer token is required",
-      });
-    }
-
-    const result = await getEvent(id, organizerToken);
+    const { id, merchantId } = req.params;
+    const result = await getEvent(id, merchantId);
 
     res.status(200).json({
       success: true,
       message: "Event retrieved successfully",
-      data: result,
+      data: result.data,
     });
   } catch (error) {
     res.status(500).json({
