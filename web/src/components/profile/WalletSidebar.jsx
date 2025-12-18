@@ -25,17 +25,16 @@ export default function WalletSidebar({
   refetchSavingsGoals,
   isTransactionsLoading,
   transactions,
+  handleGiftTicket,
 }) {
   return (
     <div className="min-h-screen bg-white text-black space-y-6 pb-10">
-      {/* Wallet Balance */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="relative bg-black text-white rounded-2xl p-6 shadow-md overflow-hidden"
       >
-        {/* tiny line graph — positioned in top-right */}
         <div className="absolute top-4 right-4 h-10 w-20 opacity-80 pointer-events-none">
           <svg viewBox="0 0 100 40" className="w-full h-full">
             <path
@@ -60,8 +59,7 @@ export default function WalletSidebar({
           {isAddingMoney ? "Adding..." : "Add Money"}
         </motion.button>
       </motion.div>
-
-      {/* Quick Actions */}
+      
       <motion.div
         initial="hidden"
         animate="visible"
@@ -78,14 +76,14 @@ export default function WalletSidebar({
         <AnimatedActionButton
           icon={<GiftIcon className="w-6 h-6" />}
           label="Gift Ticket"
+          onClick={handleGiftTicket}
         />
         <AnimatedActionButton
           icon={<BanknotesIcon className="w-6 h-6" />}
           label="Event Savings"
         />
       </motion.div>
-
-      {/* Event Savings List */}
+      
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-[500]">Your Event Savings</h3>
@@ -119,7 +117,7 @@ export default function WalletSidebar({
                 >
                   <div className="flex items-center gap-3">
                     <img
-                      src={event?.data.banner_url}
+                      src={event?.banner_url}
                       className="w-12 h-12 rounded-xl object-cover"
                     />
                     <div className="flex-grow">
@@ -133,8 +131,7 @@ export default function WalletSidebar({
                       </p>
                     </div>
                   </div>
-
-                  {/* Floating progress bar */}
+                  
                   <div className="relative mt-5 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
@@ -201,8 +198,7 @@ export default function WalletSidebar({
           </div>
         )} */}
       </div>
-
-      {/* Recent Activity */}
+      
       <div>
         <h3 className="text-sm font-[500] mb-4">Recent Activity</h3>
         <div className="space-y-5">
