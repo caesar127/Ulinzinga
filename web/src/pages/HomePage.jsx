@@ -1,22 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import searicon from "../assets/icons/searchicon.svg";
 import arrowicon from "../assets/icons/arrowicon.svg";
 import walleticon from "../assets/icons/walleticon.svg";
 import placeholderImage from "../assets/Nostalgia-Brunch-124.webp";
-import { useGetEventsQuery } from "../features/events/eventsApiSlice";
+import { useLazyGetEventsQuery } from "../features/events/eventsApiSlice";
 import EventsFilterBar from "../components/EventsFilterBar";
 import EventCard from "../components/EventCard";
 
 function HomePage() {
-  const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
   const { events } = useSelector((state) => state.event);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 8;
 
-  const { data: upcomingData } = useGetEventsQuery({
-    per_page: "20",
-    is_past: false,
-  });
+  const [getEvents, { data, isLoading, error }] = useLazyGetEventsQuery();
+
+  const fetchEvents = () => {
+    try {
+      getEvents({
+        page: 1,
+        limit: PAGE_SIZE,
+        isPast: false,
+        visible: true,
+        isActive: true,
+        sortBy: "start_date",
+        sortOrder: "asc",
+      }).unwrap();
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (events.length === 0) {
+      fetchEvents();
+    }
+  }, []);
 
   const today = new Date();
   const upcomingEvents = events
@@ -48,10 +69,12 @@ function HomePage() {
             <h1 className="text-[44px] font-medium mb-4 w-[80%]">
               Discover the moments and every experience through one platform.
             </h1>
+
             <p className="text-[#7B7979] w-[70%]">
               From concerts to community events, find, save, and share
               unforgettable experiences all in one place.
             </p>
+
             <div>
               <img
                 src="https://blog.photofeeler.com/wp-content/uploads/2017/02/flattering-pose-profile-pics.jpeg"
@@ -59,6 +82,7 @@ function HomePage() {
                 className="h-12 w-12 rounded-full"
               />
             </div>
+
             <div className="relative w-[55%]">
               <img
                 src={searicon}
@@ -73,13 +97,13 @@ function HomePage() {
             </div>
           </div>
 
-          {/* Hero Image Section */}
           <div className="relative rounded-2xl w-[60%] overflow-hidden">
             <img
               src={heroEvent?.banner_url || placeholderImage}
               alt={heroEvent?.title || "Hero"}
               className="rounded-2xl h-[60vh] w-full object-cover"
             />
+
             {heroEvent && (
               <>
                 <div className="absolute top-4 left-4 bg-white h-12 w-12 rounded-xl text-center shadow-md">
@@ -89,12 +113,11 @@ function HomePage() {
                   <span className="block text-xs uppercase">
                     {new Date(heroEvent.start_date).toLocaleDateString(
                       undefined,
-                      {
-                        month: "short",
-                      }
+                      { month: "short" }
                     )}
                   </span>
                 </div>
+
                 <div className="absolute bottom-2 right-2 bg-white h-10 px-2 rounded-full flex items-center justify-center space-x-3 shadow-md">
                   <img
                     src={heroEvent.logo_url || placeholderImage}
@@ -113,7 +136,6 @@ function HomePage() {
           </div>
         </div>
 
-        {/* CTA Section */}
         <div className="bg-[#F3F3F3] mt-12 px-24 py-8 rounded-3xl flex items-center">
           <Link
             to="/signup"
@@ -129,18 +151,29 @@ function HomePage() {
         </div>
       </div>
 
-      {/* Events Section */}
       <div className="py-6 space-y-12">
         <EventsFilterBar />
 
-        <div className="grid grid-cols-4 gap-12 mt-8">
-          {events.slice(0, 8).map((event) => (
-            <EventCard key={event._id} event={event} />
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+          {isLoading ? (
+            Array.from({ length: PAGE_SIZE }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-gray-200 animate-pulse rounded-lg h-64"
+              ></div>
+            ))
+          ) : upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event) => (
+              <EventCard key={event._id || event.id} event={event} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8 text-gray-500">
+              <p>No upcoming events found</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Wallet CTA Section */}
       <div className="bg-black rounded-4xl flex justify-center items-center text-white mt-20 mx-32 px-32 py-12 space-x-18">
         <img
           src={walleticon}
@@ -152,12 +185,16 @@ function HomePage() {
           <h1 className="text-xl md:text-xl">
             Turn Your Savings into Experiences!
           </h1>
+
           <p className="text-base text-[#949494] font-[300] max-w-xl">
             Start saving for the events you can’t wait for. Your wallet makes it
             easy to plan, and enjoy every moment.
           </p>
 
-          <Link to={"/how-it-works"} className="inline-flex bg-[#FFB300] text-xs md:text-sm text-white px-4 py-2 rounded-full items-center space-x-2 w-40">
+          <Link
+            to="/how-it-works"
+            className="inline-flex bg-[#FFB300] text-xs md:text-sm text-white px-4 py-2 rounded-full items-center space-x-2 w-40"
+          >
             <span>How it works</span>
             <img
               src={arrowicon}
