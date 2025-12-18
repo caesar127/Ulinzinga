@@ -47,7 +47,7 @@ router.put(
   update
 );
 router.get("/", list);
-router.get("/:id", getOne);
+router.get("/:id/:merchantId", getOne);
 router.post("/:id/banner", upload.single("banner"), uploadBanner);
 router.post("/:id/logo", upload.single("logo"), uploadLogo);
 router.delete("/:id", deleteOrganizerEvent);
