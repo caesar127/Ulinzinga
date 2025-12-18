@@ -11,6 +11,16 @@ const ProfileSchema = new Schema({
   phone: String,
   picture: String,
   bio: String,
+  business: {
+    reference: String,
+    name: String,
+    live: Boolean,
+  },
+  balances: [{
+    ref_id: String,
+    currency: String,
+    currency_name: String,
+  }],
 });
 
 const UserSchema = new Schema(
@@ -29,6 +39,9 @@ const UserSchema = new Schema(
       enum: ["paychangu", "local", "google"],
       default: "local",
     },
+    changuId: String,
+    googleId: String,
+    reference: String,
     name: String,
     role: {
       type: String,
