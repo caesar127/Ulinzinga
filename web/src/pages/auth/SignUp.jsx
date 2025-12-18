@@ -3,6 +3,7 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import {
   useUserSignupMutation,
   useUpdateUserInterestsMutation,
+  useGetMerchantConnectUrlMutation,
 } from "../../features/auth/authApiSlice";
 import { useGetCategoriesQuery } from "../../features/category/categoryApiSlice";
 import { handleSuccessToast2, handleErrorToast2 } from "../../utils/toasts";
@@ -10,8 +11,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { setCredentials } from "../../features/auth/authSlice";
 import logoIcon from "../../assets/logo/UlinzingaUlinzinga-2.png";
 import arrowicon from "../../assets/icons/arrowicon.svg";
-
-const steps = ["Onboarding", "Sign Up", "Interests"];
 
 function SignUpPage() {
   const navigate = useNavigate();
@@ -33,6 +32,8 @@ function SignUpPage() {
   const [userSignup, { isLoading: isSigningUp }] = useUserSignupMutation();
   const [updateUserInterests, { isLoading: isUpdatingInterests }] =
     useUpdateUserInterestsMutation();
+  const [getMerchantConnectUrl, { isLoading: isGettingMerchantUrl }] =
+    useGetMerchantConnectUrlMutation();
   const { data: categoriesData, isLoading: categoriesLoading } =
     useGetCategoriesQuery();
 
@@ -41,12 +42,22 @@ function SignUpPage() {
     { key: "organizer", label: "Organizer" },
     { key: "vendor", label: "Vendor" },
   ];
+  
+  const getSteps = () => {
+    if (merchantRole === "user") {
+      return ["Onboarding", "Sign Up", "Interests"];
+    } else {
+      return ["Onboarding", "Sign Up"];
+    }
+  };
+
+  const steps = getSteps();
 
   useEffect(() => {
     const role = searchParams.get("role");
     if (role) {
       setMerchantRole(role);
-      if (role === "user") {
+      if (["user", "organizer", "vendor"].includes(role)) {
         setStep(1);
       }
     }
@@ -102,6 +113,35 @@ function SignUpPage() {
     }
   };
   
+  const handleMerchantOAuth = async () => {
+    if (!merchantRole) {
+      handleErrorToast2("Please select who best describes you.");
+      return;
+    }
+
+    if (!["organizer", "vendor"].includes(merchantRole)) {
+      handleErrorToast2("Invalid merchant role selected.");
+      return;
+    }
+
+    try {
+      localStorage.setItem("currentMerchantRole", merchantRole);
+
+      const result = await getMerchantConnectUrl({
+        role: merchantRole,
+      }).unwrap();
+
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        throw new Error("Failed to get merchant connect URL");
+      }
+    } catch (error) {
+      console.error("Merchant OAuth error:", error);
+      handleErrorToast2(error.data?.message || "Failed to initiate merchant authentication");
+    }
+  };
+
   const handleSignup = async (e) => {
     e.preventDefault();
 
@@ -158,8 +198,7 @@ function SignUpPage() {
       ...prev,
       [name]: value,
     }));
-
-    // Clear validation error for this field
+    
     if (validationErrors[name]) {
       setValidationErrors((prev) => ({
         ...prev,
@@ -194,8 +233,7 @@ function SignUpPage() {
       </div>
 
       <img src={logoIcon} alt="Logo" className="h-16 mb-3" />
-
-      {/* Step 0: Role Selection */}
+      
       {step === 0 && (
         <>
           <h1 className="text-xl font-[500] mb-2">What best describes you?</h1>
@@ -246,121 +284,181 @@ function SignUpPage() {
           </div>
         </>
       )}
-
-      {/* Step 1: Sign Up Form */}
+      
       {step === 1 && (
         <>
-          <h1 className="text-xl font-medium mb-2">Welcome to Ulinzinga</h1>
-          <p className="text-sm text-[#949494] mb-6">
-            Create your account to get started
-          </p>
+          {merchantRole === "user" ? (
+            <>
+              <h1 className="text-xl font-medium mb-2">Welcome to Ulinzinga</h1>
+              <p className="text-sm text-[#949494] mb-6">
+                Create your account to get started
+              </p>
 
-          <form
-            onSubmit={handleSignup}
-            className="mt-3 w-full max-w-md flex flex-col gap-3"
-          >
-            <div>
-              <input
-                type="text"
-                name="username"
-                placeholder="Enter your username"
-                value={formData.username}
-                onChange={handleInputChange}
-                className={`py-4 px-4 text-sm border rounded-lg bg-[#F3F3F3] border-black/10 focus:outline-none w-full ${
-                  validationErrors.username ? "border-red-500" : ""
-                }`}
-              />
-              {validationErrors.username && (
-                <p className="text-red-500 text-xs mt-1">
-                  {validationErrors.username}
+              <form
+                onSubmit={handleSignup}
+                className="mt-3 w-full max-w-md flex flex-col gap-3"
+              >
+                <div>
+                  <input
+                    type="text"
+                    name="username"
+                    placeholder="Enter your username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    className={`py-4 px-4 text-sm border rounded-lg bg-[#F3F3F3] border-black/10 focus:outline-none w-full ${
+                      validationErrors.username ? "border-red-500" : ""
+                    }`}
+                  />
+                  {validationErrors.username && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {validationErrors.username}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`py-4 px-4 text-sm border rounded-lg bg-[#F3F3F3] border-black/10 focus:outline-none w-full ${
+                      validationErrors.email ? "border-red-500" : ""
+                    }`}
+                  />
+                  {validationErrors.email && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {validationErrors.email}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className={`py-4 px-4 text-sm border rounded-lg bg-[#F3F3F3] border-black/10 focus:outline-none w-full ${
+                      validationErrors.password ? "border-red-500" : ""
+                    }`}
+                  />
+                  {validationErrors.password && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {validationErrors.password}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className={`py-4 px-4 text-sm border rounded-lg bg-[#F3F3F3] border-black/10 focus:outline-none w-full ${
+                      validationErrors.confirmPassword ? "border-red-500" : ""
+                    }`}
+                  />
+                  {validationErrors.confirmPassword && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {validationErrors.confirmPassword}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSigningUp}
+                  className="bg-black disabled:opacity-50 text-white py-4 px-4 rounded-lg flex items-center justify-center w-full relative mt-5"
+                >
+                  <span>{isSigningUp ? "Creating Account..." : "Continue"}</span>
+                  {!isSigningUp && (
+                    <img
+                      src={arrowicon}
+                      alt="arrow"
+                      className="h-6 w-6 absolute right-4"
+                    />
+                  )}
+                </button>
+              </form>
+
+              <p className="text-sm text-center text-[#949494] mt-3">
+                Already have an account?{" "}
+                <span
+                  onClick={() => navigate("/signin")}
+                  className="text-[#FFB300] cursor-pointer"
+                >
+                  Sign In
+                </span>
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-xl font-medium mb-2">
+                Connect your {merchantRole === "organizer" ? "Organizer" : "Vendor"} account
+              </h1>
+              <p className="text-sm text-[#949494] mb-6">
+                You'll be redirected to PayChangu to securely connect your business account
+              </p>
+
+              <div className="mt-3 w-full max-w-md flex flex-col gap-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">
+                        Secure PayChangu Integration
+                      </h3>
+                      <p className="text-sm text-blue-700 mt-1">
+                        This will redirect you to PayChangu to securely authenticate your business account. You'll be able to process payments for your {merchantRole === "organizer" ? "events" : "products/services"}.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleMerchantOAuth}
+                  disabled={isGettingMerchantUrl}
+                  className="bg-black disabled:opacity-50 text-white py-4 px-4 rounded-lg flex items-center justify-center w-full relative"
+                >
+                  <span>
+                    {isGettingMerchantUrl
+                      ? "Preparing PayChangu Connection..."
+                      : `Connect ${merchantRole === "organizer" ? "Organizer" : "Vendor"} Account`}
+                  </span>
+                  {!isGettingMerchantUrl && (
+                    <img
+                      src={arrowicon}
+                      alt="arrow"
+                      className="h-6 w-6 absolute right-4"
+                    />
+                  )}
+                </button>
+
+                <p className="text-sm text-center text-[#949494] mt-3">
+                  Already have an account?{" "}
+                  <span
+                    onClick={() => navigate("/signin")}
+                    className="text-[#FFB300] cursor-pointer"
+                  >
+                    Sign In
+                  </span>
                 </p>
-              )}
-            </div>
-
-            <div>
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className={`py-4 px-4 text-sm border rounded-lg bg-[#F3F3F3] border-black/10 focus:outline-none w-full ${
-                  validationErrors.email ? "border-red-500" : ""
-                }`}
-              />
-              {validationErrors.email && (
-                <p className="text-red-500 text-xs mt-1">
-                  {validationErrors.email}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <input
-                type="password"
-                name="password"
-                placeholder="Create a password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className={`py-4 px-4 text-sm border rounded-lg bg-[#F3F3F3] border-black/10 focus:outline-none w-full ${
-                  validationErrors.password ? "border-red-500" : ""
-                }`}
-              />
-              {validationErrors.password && (
-                <p className="text-red-500 text-xs mt-1">
-                  {validationErrors.password}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <input
-                type="password"
-                name="confirmPassword"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className={`py-4 px-4 text-sm border rounded-lg bg-[#F3F3F3] border-black/10 focus:outline-none w-full ${
-                  validationErrors.confirmPassword ? "border-red-500" : ""
-                }`}
-              />
-              {validationErrors.confirmPassword && (
-                <p className="text-red-500 text-xs mt-1">
-                  {validationErrors.confirmPassword}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSigningUp}
-              className="bg-black disabled:opacity-50 text-white py-4 px-4 rounded-lg flex items-center justify-center w-full relative mt-5"
-            >
-              <span>{isSigningUp ? "Creating Account..." : "Continue"}</span>
-              {!isSigningUp && (
-                <img
-                  src={arrowicon}
-                  alt="arrow"
-                  className="h-6 w-6 absolute right-4"
-                />
-              )}
-            </button>
-          </form>
-
-          <p className="text-sm text-center text-[#949494] mt-3">
-            Already have an account?{" "}
-            <span
-              onClick={() => navigate("/signin")}
-              className="text-[#FFB300] cursor-pointer"
-            >
-              Sign In
-            </span>
-          </p>
+              </div>
+            </>
+          )}
         </>
       )}
-
-      {/* Step 2: Interests Selection */}
-      {step === 2 && (
+      
+      {step === 2 && merchantRole === "user" && (
         <>
           <h1 className="text-xl font-medium mb-2">Get Personalized Feed</h1>
           <p className="text-sm text-[#949494] mb-6">
