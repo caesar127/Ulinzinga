@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const BASE_URL = "https://api.paychangu.com/events/";
+const PUBLIC_BASE_URL = "https://dashboard.paychangu.com/mobile/api/public";
 
 const buildHeaders = (token, contentType = "application/json") => ({
   "Content-Type": contentType,
@@ -55,7 +56,6 @@ export const createEvent = async (eventData) => {
         },
       });
 
-      console.log(response.data);
       return response.data;
     } else {
       const response = await axios.post(
@@ -81,82 +81,51 @@ export const createEvent = async (eventData) => {
         { headers: buildHeaders(eventData.organizerId) }
       );
 
-      console.log(response.data);
       return response.data;
     }
   } catch (error) {
-    console.error("Create Event Error:", error.response?.data || error.message);
     throw new Error(error.response?.data?.message || error.message);
   }
 };
 
 export const getEvents = async (organizerToken, queryParams = {}) => {
   try {
-    // Build query parameters for pagination
-    const params = new URLSearchParams();
-    
-    // Add pagination parameters
-    if (queryParams.page) params.append('page', queryParams.page);
-    if (queryParams.limit) params.append('limit', queryParams.limit);
-    if (queryParams.per_page) params.append('per_page', queryParams.per_page);
-    
-    // Add sorting parameters
-    if (queryParams.sortBy) params.append('sort_by', queryParams.sortBy);
-    if (queryParams.sortOrder) params.append('sort_order', queryParams.sortOrder);
-    
-    // Add filter parameters
-    if (queryParams.status) params.append('status', queryParams.status);
-    if (queryParams.isActive !== undefined) params.append('is_active', queryParams.isActive);
-    if (queryParams.isPast !== undefined) params.append('is_past', queryParams.isPast);
+    const merchantId = queryParams.merchantId || organizerToken;
+    console.log("merchantId", merchantId);
+    const options = {
+      method: "GET",
+      url: "https://api.paychangu.com/events/",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${merchantId}`,
+      },
+    };
 
-    const url = params.toString() ? `${BASE_URL}?${params.toString()}` : BASE_URL;
-    
-    const response = await axios.get(url, {
-      headers: buildHeaders(organizerToken),
-    });
-
-    console.log(response.data);
-    
-    // Transform response to include pagination metadata if not provided by API
-    const result = response.data;
-    
-    // If the API doesn't provide pagination metadata, add it based on the response
-    if (!result.pagination && Array.isArray(result.data || result)) {
-      const events = result.data || result;
-      const currentPage = parseInt(queryParams.page) || 1;
-      const limit = parseInt(queryParams.limit) || parseInt(queryParams.per_page) || 20;
-      const totalCount = result.total || events.length;
-      const totalPages = Math.ceil(totalCount / limit);
-      
-      result.pagination = {
-        currentPage,
-        totalPages,
-        totalCount,
-        limit,
-        hasNextPage: currentPage < totalPages,
-        hasPrevPage: currentPage > 1,
-        sortBy: queryParams.sortBy || 'created_at',
-        sortOrder: queryParams.sortOrder || 'desc'
-      };
-    }
-    
-    return result;
+    const { data } = await axios.request(options);
+    return data;
   } catch (error) {
-    console.error("Get Events Error:", error.response?.data || error.message);
     throw new Error(error.response?.data?.message || error.message);
   }
 };
 
-export const getEvent = async (eventId, organizerToken) => {
+export const getEvent = async (eventId, merchantId) => {
   try {
-    const response = await axios.get(`${BASE_URL}${eventId}`, {
-      headers: buildHeaders(organizerToken),
-    });
-
-    console.log(response.data);
-    return response.data;
+    console.log("eventId", eventId);
+    console.log("merchantId", merchantId);
+    const options = {
+      method: "GET",
+      url: `https://api.paychangu.com/events/${eventId}`,
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${merchantId}`,
+      },
+    };
+console.log("options", options);
+    const { data } = await axios.request(options);
+    console.log("data", data);
+    return data;
   } catch (error) {
-    console.error("Get Event Error:", error.response?.data || error.message);
+    console.log(error.message);
     throw new Error(error.response?.data?.message || error.message);
   }
 };
