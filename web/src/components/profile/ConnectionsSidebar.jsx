@@ -28,8 +28,7 @@ export default function ConnectionsSidebar({
   return (
     <div className="min-h-screen bg-white pb-4">
       <h1 className="text-xl font-[600] text-[#2D2D2D] mb-4">Connections</h1>
-
-      {/* Tabs */}
+      
       <div className="flex text-xs font-[500] bg-[#F7F7F7] p-1 rounded-xl gap-1 shadow-sm">
         {[
           { key: "connections", label: "Connections", icon: UserGroupIcon },
@@ -52,7 +51,6 @@ export default function ConnectionsSidebar({
       </div>
 
       <div className="mt-6 flex-1 overflow-y-auto custom-scrollbar overflow-x-hidden p-2">
-        {/* --- CONNECTIONS LIST --- */}
         {connectionsTab === "connections" && (
           <div className="space-y-3">
             {isConnectionsLoading ? (
@@ -68,7 +66,6 @@ export default function ConnectionsSidebar({
                   whileHover={{ scale: 1.015 }}
                   className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-br from-white to-gray-50 shadow-sm border border-gray-100 hover:shadow-lg transition"
                 >
-                  {/* Profile */}
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <img
@@ -89,11 +86,10 @@ export default function ConnectionsSidebar({
                       </p>
                     </div>
                   </div>
-
-                  {/* Action */}
+                  
                   <motion.button
                     whileTap={{ scale: 0.92 }}
-                    className="flex items-center gap-1 px-4 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-xl shadow-sm hover:bg-gray-300 transition"
+                    className="flex items-center gap-1 px-4 py-1.5 text-xs bg-black text-white rounded-xl shadow-sm transition"
                     disabled
                   >
                     <LinkIcon className="w-4 h-4" />
@@ -108,13 +104,11 @@ export default function ConnectionsSidebar({
             )}
           </div>
         )}
-
-        {/* --- REQUESTS LIST --- */}
+        
         {connectionsTab === "requests" && (
           <div className="space-y-4">
             {pendingRequests?.length > 0 || sentRequestsData?.length > 0 ? (
               <>
-                {/* Received Requests Section */}
                 {pendingRequests && pendingRequests.length > 0 && (
                   <div className="space-y-2">
                     <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
@@ -184,8 +178,7 @@ export default function ConnectionsSidebar({
                     ))}
                   </div>
                 )}
-
-                {/* Sent Requests Section */}
+                
                 {sentRequestsData && sentRequestsData.length > 0 && (
                   <div className="space-y-2">
                     <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
@@ -315,8 +308,7 @@ export default function ConnectionsSidebar({
             )}
           </div>
         )}
-
-        {/* --- EXPLORE GRID --- */}
+        
         {connectionsTab === "explore" && (
           <div>
             {isSuggestedLoading ? (
