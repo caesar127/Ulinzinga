@@ -138,19 +138,14 @@ export const verifyMerchantToken = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    // Return all user data (excluding password)
+    const userData = user.toObject();
+    delete userData.password;
+
     res.json({
       message: "Merchant (Vendor/Organizer) verified successfully",
       token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        profile: user.profile,
-        authProvider: user.authProvider,
-        changuId: user.changuId,
-        reference: user.reference,
-      },
+      user: userData,
       business: business,
       balances: malawiBalances,
     });
@@ -214,10 +209,14 @@ export const merchantRegister = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    // Return all user data (excluding password)
+    const userData = user.toObject();
+    delete userData.password;
+
     res.json({
       message: "Merchant (Vendor/Organizer) login successful",
       token,
-      user,
+      user: userData,
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch or save user data" });
@@ -331,18 +330,14 @@ export const userSignup = async (req, res) => {
       }
     );
 
+    // Return all user data (excluding password)
+    const userData = user.toObject();
+    delete userData.password;
+
     res.status(201).json({
       message: "User signup successful!",
       token,
-      user: {
-        id: user._id,
-        _id: user._id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
-        authProvider: user.authProvider,
-        username: user.username,
-      },
+      user: userData,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -358,7 +353,12 @@ export const userLogin = async (req, res) => {
         .status(400)
         .json({ message: "Email and password are required" });
 
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email })
+      .select("+password")
+      .populate("wallet")
+      .populate("favoriteEvents")
+      .populate("interests")
+      .populate("favoriteOrganizers");
     if (!user)
       return res
         .status(404)
@@ -372,22 +372,24 @@ export const userLogin = async (req, res) => {
     const isMatch = await bcryptjs.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: "Invalid password" });
 
+    // Update lastLogin
+    user.lastLogin = new Date();
+    await user.save();
+
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
+    // Return all user data (excluding password)
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
     res.status(200).json({
       message: "User login successful",
       token,
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        name: user.name || "",
-        authProvider: user.authProvider,
-      },
+      user: userResponse,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -429,19 +431,19 @@ export const userLogout = async (req, res) => {
 
 export const getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user?.userId);
+    const user = await User.findById(req.user?.userId)
+      .populate("wallet")
+      .populate("favoriteEvents")
+      .populate("interests")
+      .populate("favoriteOrganizers");
     if (!user) return res.status(404).json({ error: "User not found" });
 
+    // Return all user data (excluding password if it exists)
+    const userData = user.toObject();
+    delete userData.password;
+
     res.json({
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        lastLogin: user.lastLogin,
-        profile: user.profile,
-        createdAt: user.createdAt,
-      },
+      user: userData,
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch current user" });
