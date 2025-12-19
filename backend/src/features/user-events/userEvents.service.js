@@ -1,14 +1,18 @@
+import axios from "axios";
 import User from "../users/users.model.js";
 import Event from "../events/events.model.js";
 import { PAGINATION } from "../../core/utils/constants.js";
 import { getUserTicketsByEmailService } from "../events/events.service.js";
 
-export const getRecommendedEventsService = async (userId, limit = PAGINATION.RECOMMENDED_EVENTS_LIMIT) => {
+export const getRecommendedEventsService = async (
+  userId,
+  limit = PAGINATION.RECOMMENDED_EVENTS_LIMIT
+) => {
   const user = await User.findById(userId).select("interests location");
   if (!user) throw new Error("User not found");
 
   const userInterestIds = user.interests || [];
-  
+
   const events = await Event.find({
     isActive: true,
     status: "published",
@@ -22,19 +26,22 @@ export const getRecommendedEventsService = async (userId, limit = PAGINATION.REC
   return events;
 };
 
-export const getTrendingEventsService = async (userId, limit = PAGINATION.TRENDING_EVENTS_LIMIT) => {
+export const getTrendingEventsService = async (
+  userId,
+  limit = PAGINATION.TRENDING_EVENTS_LIMIT
+) => {
   const user = await User.findById(userId).select("interests");
   if (!user) throw new Error("User not found");
 
   const interestIds = user.interests || [];
 
   const trending = await Event.aggregate([
-    { 
-      $match: { 
+    {
+      $match: {
         isActive: true,
         status: "published",
-        categories: { $in: interestIds }
-      }
+        categories: { $in: interestIds },
+      },
     },
     {
       $addFields: {
@@ -104,7 +111,9 @@ export const getFavoriteOrganizersService = async (userId) => {
   return user.favoriteOrganizers || [];
 };
 
-export const getRecentEventsService = async (limit = PAGINATION.RECENT_EVENTS_LIMIT) => {
+export const getRecentEventsService = async (
+  limit = PAGINATION.RECENT_EVENTS_LIMIT
+) => {
   const monthAgo = new Date();
   monthAgo.setDate(monthAgo.getDate() - 30);
 
@@ -117,7 +126,10 @@ export const getRecentEventsService = async (limit = PAGINATION.RECENT_EVENTS_LI
     .limit(limit);
 };
 
-export const getEventsForYouService = async (userId, limit = PAGINATION.RECOMMENDED_EVENTS_LIMIT) => {
+export const getEventsForYouService = async (
+  userId,
+  limit = PAGINATION.RECOMMENDED_EVENTS_LIMIT
+) => {
   const user = await User.findById(userId).select("interests location");
   if (!user) throw new Error("User not found");
 
@@ -135,7 +147,7 @@ export const getEventsForYouService = async (userId, limit = PAGINATION.RECOMMEN
         interestMatchCount: {
           $size: { $setIntersection: ["$categories", interestIds] },
         },
-        
+
         score: {
           $add: [
             { $multiply: ["$interestMatchCount", 1.5] },
@@ -151,84 +163,92 @@ export const getEventsForYouService = async (userId, limit = PAGINATION.RECOMMEN
 };
 
 export const getUserTicketsService = async (userId, limit = 50, page = 1) => {
-  // Find user by ID to get email
-  const user = await User.findById(userId).select('email _id');
-  if (!user) {
-    throw new Error(`User not found with ID: ${userId}`);
-  }
-
-  if (!user.email) {
-    throw new Error("User email not found");
-  }
-
   try {
-    // Fetch tickets from external PayChangu API
-    const externalTicketsData = await getUserTicketsByEmailService(user.email);
-    
-    if (!externalTicketsData || !externalTicketsData.data) {
+    const user = await User.findById(userId).select("email");
+    if (!user?.email) {
+      throw new Error("User or user email not found");
+    }
+
+    const externalRes = await getUserTicketsByEmailService(user.email);
+    const allTickets = externalRes?.data ?? [];
+
+    if (!allTickets.length) {
       return {
         events: [],
         total: 0,
         page,
         limit,
-        hasNextPage: false
+        hasNextPage: false,
       };
     }
 
-    const allTickets = externalTicketsData.data || [];
-    
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedTickets = allTickets.slice(startIndex, endIndex);
-    
-    const eventSlugs = [...new Set(paginatedTickets.map(ticket => ticket.event_slug).filter(Boolean))];
-    
-    const localEvents = await Event.find({
-      slug: { $in: eventSlugs }
-    }).populate("organizer", "name profile");
-    
-    const userEvents = paginatedTickets.map(ticket => {
-      const localEvent = localEvents.find(e => e.slug === ticket.event_slug);
-      
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const tickets = allTickets.slice(start, end);
+
+    const eventSlugs = [
+      ...new Set(tickets.map((t) => t.event.slug).filter(Boolean)),
+    ];
+
+    const externalEvents = await Promise.all(
+      eventSlugs.map(async (slug) => {
+        try {
+          const { data } = await axios.get(
+            `https://dashboard.paychangu.com/mobile/api/public/events/${slug}`,
+            {
+              headers: {
+                Accept: "application/json",
+                Authorization: "Bearer 123",
+              },
+            }
+          );
+
+          return [slug, data?.data || null];
+        } catch {
+          return [slug, null];
+        }
+      })
+    );
+
+    const externalEventMap = new Map(externalEvents);
+
+    const events = tickets.map((ticket) => {
+      const external = externalEventMap.get(ticket.event.slug);
+
       return {
         ticketId: ticket.id,
-        paychanguTicketId: ticket.ticket_id,
-        eventSlug: ticket.event_slug,
-        eventId: localEvent?._id,
-        eventTitle: localEvent?.title || ticket.event_name || `Event ${ticket.event_slug}`,
-        eventDate: localEvent?.start_date || ticket.event_date,
-        eventImage: localEvent?.coverImage || "https://images.pexels.com/photos/373912/pexels-photo-373912.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
-        eventLocation: localEvent?.location || ticket.venue || "Location TBD",
-        ticketType: ticket.ticket_type,
-        quantity: ticket.quantity,
-        price: ticket.amount,
-        currency: ticket.currency,
-        purchaseDate: ticket.purchase_date,
-        isRedeemed: ticket.is_redeemed || false,
-        status: ticket.status,
-        qrCodeUuid: ticket.qr_code,
-        paymentStatus: ticket.payment_status,
-        isGift: ticket.is_gift || false,
-        giftMessage: ticket.gift_message
+        eventSlug: ticket.event.slug,
+        eventId: external.id,
+        eventTitle: external.title,
+        eventDate: external?.start_date,
+        eventVenu: external.venue,
+        banner_url: external.banner_url,
+        logo_url: external.logo_url,
+        description: external.description,
+        packageId: ticket.package_id,
+        package: ticket.package,
+        purchaseDate: ticket.created_at,
+        ticketNumber: ticket.ticket_number,
+        isRedeemed: Boolean(ticket.is_redeemed),
+        isGift: Boolean(ticket.is_gift),
+        giftMessage: ticket.gift_message,
       };
     });
 
     return {
-      events: userEvents,
+      events,
       total: allTickets.length,
       page,
       limit,
-      hasNextPage: endIndex < allTickets.length
+      hasNextPage: end < allTickets.length,
     };
   } catch (error) {
-    console.error('Error fetching user tickets:', error);
-    // Return empty result on error
     return {
       events: [],
       total: 0,
       page,
       limit,
-      hasNextPage: false
+      hasNextPage: false,
     };
   }
 };
@@ -237,12 +257,14 @@ export const getUserEventByIdService = async (userId, eventId) => {
   const user = await User.findById(userId);
   if (!user) throw new Error("User not found");
 
-  const Ticket = await import("../tickets/tickets.model.js").then(m => m.default);
-  
+  const Ticket = await import("../tickets/tickets.model.js").then(
+    (m) => m.default
+  );
+
   const tickets = await Ticket.find({
     customerEmail: user.email,
     paychanguEventId: eventId,
-    paymentStatus: "paid"
+    paymentStatus: "paid",
   }).sort({ purchaseDate: -1 });
 
   if (tickets.length === 0) {
@@ -250,23 +272,22 @@ export const getUserEventByIdService = async (userId, eventId) => {
   }
 
   const event = await Event.findOne({
-    $or: [
-      { slug: eventId },
-      { _id: eventId }
-    ]
+    $or: [{ slug: eventId }, { _id: eventId }],
   }).populate("organizer", "name profile");
 
   return {
     tickets,
-    event: event ? {
-      _id: event._id,
-      title: event.title,
-      startDate: event.startDate,
-      endDate: event.endDate,
-      location: event.location,
-      coverImage: event.coverImage,
-      description: event.description,
-      organizer: event.organizer
-    } : null
+    event: event
+      ? {
+          _id: event._id,
+          title: event.title,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          location: event.location,
+          coverImage: event.coverImage,
+          description: event.description,
+          organizer: event.organizer,
+        }
+      : null,
   };
 };
