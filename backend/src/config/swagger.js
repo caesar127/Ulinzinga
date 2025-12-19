@@ -128,6 +128,33 @@ const openApiSpec = {
           createdAt: { type: "string", format: "date-time" },
         },
       },
+      EventGallery: {
+        type: "object",
+        properties: {
+          _id: { type: "string" },
+          event: { type: "string" },
+          user: { type: "string" },
+          type: { type: "string", enum: ["image", "video"] },
+          mediaUrl: { type: "string" },
+          thumbnailUrl: { type: "string" },
+          caption: { type: "string" },
+          visibilityScope: { type: "string", enum: ["event", "profile", "vault"] },
+          privacy: { type: "string", enum: ["public", "private"] },
+          approvalStatus: { type: "string", enum: ["pending", "approved", "rejected"] },
+          approvedBy: { type: "string" },
+          approvedAt: { type: "string", format: "date-time" },
+          rejectionReason: { type: "string" },
+          analytics: {
+            type: "object",
+            properties: {
+              views: { type: "integer" },
+              likes: { type: "integer" },
+            },
+          },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+        },
+      },
     },
   },
   security: [
@@ -144,6 +171,7 @@ const openApiSpec = {
     { name: "Auth - Google", description: "Google OAuth authentication" },
     { name: "Events", description: "Public event management" },
     { name: "Organizer Events", description: "Organizer event management" },
+    { name: "Event Gallery", description: "Event gallery management" },
     { name: "Wallet", description: "Wallet operations" },
     { name: "Savings Goals", description: "Savings goals management" },
     { name: "Connections", description: "User connections" },
@@ -898,6 +926,366 @@ const openApiSpec = {
         responses: {
           200: { description: "Logo uploaded successfully" },
           400: { description: "No file provided or invalid file" },
+        },
+      },
+    },
+
+    // ==================== EVENT GALLERY ENDPOINTS ====================
+    "/api/gallery/upload": {
+      post: {
+        summary: "Upload gallery item",
+        tags: ["Event Gallery"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                properties: {
+                  file: {
+                    type: "string",
+                    format: "binary",
+                    description: "Image or video file to upload",
+                  },
+                  type: {
+                    type: "string",
+                    enum: ["image", "video"],
+                    description: "Type of media file",
+                  },
+                  caption: {
+                    type: "string",
+                    description: "Optional caption for the media",
+                  },
+                  visibilityScope: {
+                    type: "string",
+                    enum: ["event", "profile", "vault"],
+                    description: "Visibility scope of the gallery item",
+                  },
+                  privacy: {
+                    type: "string",
+                    enum: ["public", "private"],
+                    description: "Privacy setting",
+                  },
+                  eventId: {
+                    type: "string",
+                    description: "Event ID (required if visibilityScope is 'event')",
+                  },
+                },
+                required: ["file", "type", "visibilityScope"],
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: "Gallery item uploaded successfully" },
+          400: { description: "Invalid file or missing required fields" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/gallery/event/{eventId}/access": {
+      get: {
+        summary: "Check event upload access",
+        tags: ["Event Gallery"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "eventId",
+            required: true,
+            schema: { type: "string" },
+            description: "Event ID",
+          },
+        ],
+        responses: {
+          200: { description: "Access check result" },
+          401: { description: "Unauthorized" },
+          404: { description: "Event not found" },
+        },
+      },
+    },
+    "/api/gallery/event/{eventId}": {
+      get: {
+        summary: "Fetch event gallery",
+        tags: ["Event Gallery"],
+        parameters: [
+          {
+            in: "path",
+            name: "eventId",
+            required: true,
+            schema: { type: "string" },
+            description: "Event ID",
+          },
+          {
+            in: "query",
+            name: "page",
+            schema: { type: "integer", minimum: 1, default: 1 },
+            description: "Page number",
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            description: "Items per page",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Event gallery items",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/EventGallery" },
+                    },
+                    pagination: {
+                      type: "object",
+                      properties: {
+                        currentPage: { type: "integer" },
+                        totalPages: { type: "integer" },
+                        totalCount: { type: "integer" },
+                        limit: { type: "integer" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          404: { description: "Event not found" },
+        },
+      },
+    },
+    "/api/gallery/user/{userId}": {
+      get: {
+        summary: "Fetch user gallery",
+        tags: ["Event Gallery"],
+        parameters: [
+          {
+            in: "path",
+            name: "userId",
+            required: true,
+            schema: { type: "string" },
+            description: "User ID",
+          },
+          {
+            in: "query",
+            name: "page",
+            schema: { type: "integer", minimum: 1, default: 1 },
+            description: "Page number",
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            description: "Items per page",
+          },
+          {
+            in: "query",
+            name: "scope",
+            schema: { type: "string", enum: ["event", "profile", "vault"] },
+            description: "Filter by visibility scope",
+          },
+        ],
+        responses: {
+          200: {
+            description: "User gallery items",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/EventGallery" },
+                    },
+                    pagination: {
+                      type: "object",
+                      properties: {
+                        currentPage: { type: "integer" },
+                        totalPages: { type: "integer" },
+                        totalCount: { type: "integer" },
+                        limit: { type: "integer" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          404: { description: "User not found" },
+        },
+      },
+    },
+    "/api/gallery/vault": {
+      get: {
+        summary: "Fetch user vault",
+        tags: ["Event Gallery"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "query",
+            name: "page",
+            schema: { type: "integer", minimum: 1, default: 1 },
+            description: "Page number",
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            description: "Items per page",
+          },
+        ],
+        responses: {
+          200: {
+            description: "User vault items",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/EventGallery" },
+                    },
+                    pagination: {
+                      type: "object",
+                      properties: {
+                        currentPage: { type: "integer" },
+                        totalPages: { type: "integer" },
+                        totalCount: { type: "integer" },
+                        limit: { type: "integer" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/gallery/pending/{eventId}": {
+      get: {
+        summary: "Fetch pending gallery items",
+        tags: ["Event Gallery"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "eventId",
+            required: true,
+            schema: { type: "string" },
+            description: "Event ID",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Pending gallery items",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/EventGallery" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: "Unauthorized" },
+          404: { description: "Event not found" },
+        },
+      },
+    },
+    "/api/gallery/approve/{galleryId}": {
+      post: {
+        summary: "Approve gallery item",
+        tags: ["Event Gallery"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "galleryId",
+            required: true,
+            schema: { type: "string" },
+            description: "Gallery item ID",
+          },
+        ],
+        responses: {
+          200: { description: "Gallery item approved successfully" },
+          401: { description: "Unauthorized" },
+          404: { description: "Gallery item not found" },
+        },
+      },
+    },
+    "/api/gallery/reject/{galleryId}": {
+      post: {
+        summary: "Reject gallery item",
+        tags: ["Event Gallery"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "galleryId",
+            required: true,
+            schema: { type: "string" },
+            description: "Gallery item ID",
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["reason"],
+                properties: {
+                  reason: {
+                    type: "string",
+                    description: "Reason for rejection",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Gallery item rejected successfully" },
+          400: { description: "Rejection reason required" },
+          401: { description: "Unauthorized" },
+          404: { description: "Gallery item not found" },
+        },
+      },
+    },
+    "/api/gallery/{galleryId}": {
+      delete: {
+        summary: "Delete gallery item",
+        tags: ["Event Gallery"],
+        parameters: [
+          {
+            in: "path",
+            name: "galleryId",
+            required: true,
+            schema: { type: "string" },
+            description: "Gallery item ID",
+          },
+        ],
+        responses: {
+          200: { description: "Gallery item deleted successfully" },
+          404: { description: "Gallery item not found" },
         },
       },
     },
