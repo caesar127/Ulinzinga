@@ -67,10 +67,14 @@ export const createGalleryItem = async ({
 };
 
 export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 15);
+  const uniquePath = `eventGallery/${timestamp}-${randomString}-${filename}`;
+  
   const formData = new FormData();
   formData.append("file", new File([fileBuffer], filename, { type: mimetype }));
   formData.append("projectName", "ulinzinga");
-  formData.append("path", "eventGallery");
+  formData.append("path", uniquePath);
 
   const { body } = await request(`${process.env.STORAGE_URL}/storage/upload`, {
     method: "POST",
