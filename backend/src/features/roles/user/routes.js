@@ -5,6 +5,7 @@ import authRoutes from "../../auth/auth.routes.js";
 import userRoutes from "../../users/users.routes.js";
 import connectionRoutes from "../../connection/connection.routes.js";
 import walletRoutes from "../../wallet/wallet.routes.js";
+import galleryRoutes from "../../event-gallery/eventGallery.routes.js";
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use("/events", userEventsRoutes);
 router.use("/tickets", ticketsRoutes);
 router.use("/connections", connectionRoutes);
 router.use("/wallet", walletRoutes);
+router.use("/gallery", galleryRoutes);
 
 export default router;
