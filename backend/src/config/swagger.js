@@ -931,7 +931,7 @@ const openApiSpec = {
     },
 
     // ==================== EVENT GALLERY ENDPOINTS ====================
-    "/api/gallery/upload": {
+    "/api/user/gallery/upload": {
       post: {
         summary: "Upload gallery item",
         tags: ["Event Gallery"],
@@ -984,7 +984,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/gallery/event/{eventId}/access": {
+    "/api/user/gallery/event/{eventId}/access": {
       get: {
         summary: "Check event upload access",
         tags: ["Event Gallery"],
@@ -1005,7 +1005,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/gallery/event/{eventId}": {
+    "/api/user/gallery/event/{eventId}": {
       get: {
         summary: "Fetch event gallery",
         tags: ["Event Gallery"],
@@ -1061,7 +1061,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/gallery/user/{userId}": {
+    "/api/user/gallery/user/{userId}": {
       get: {
         summary: "Fetch user gallery",
         tags: ["Event Gallery"],
@@ -1123,7 +1123,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/gallery/vault": {
+    "/api/user/gallery/vault": {
       get: {
         summary: "Fetch user vault",
         tags: ["Event Gallery"],
@@ -1173,7 +1173,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/gallery/pending/{eventId}": {
+    "/api/user/gallery/pending/{eventId}": {
       get: {
         summary: "Fetch pending gallery items",
         tags: ["Event Gallery"],
@@ -1210,7 +1210,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/gallery/approve/{galleryId}": {
+    "/api/user/gallery/approve/{galleryId}": {
       post: {
         summary: "Approve gallery item",
         tags: ["Event Gallery"],
@@ -1231,7 +1231,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/gallery/reject/{galleryId}": {
+    "/api/user/gallery/reject/{galleryId}": {
       post: {
         summary: "Reject gallery item",
         tags: ["Event Gallery"],
@@ -1270,7 +1270,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/gallery/{galleryId}": {
+    "/api/user/gallery/{galleryId}": {
       delete: {
         summary: "Delete gallery item",
         tags: ["Event Gallery"],
