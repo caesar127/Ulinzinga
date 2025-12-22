@@ -5,17 +5,22 @@ import AppError from "../../core/error/AppError.js";
 import EventGallery from "./eventGallery.model.js";
 import { request, FormData, File } from "undici";
 
-const escapeRegExp = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (value = "") =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const normalizeEmail = (email) => (email || "").toLowerCase().trim();
 
-export const verifyUserTicketForEvent = async (userEmail, eventId) => {
+export const verifyUserTicketForEvent = async (userEmail, eventIdentifier) => {
   if (!userEmail)
     throw new AppError("User email is required to verify event tickets", 400);
 
-  if (!mongoose.Types.ObjectId.isValid(eventId))
-    throw new AppError("Invalid event ID", 400);
+  if (!eventIdentifier) throw new AppError("Event ID or slug is required", 400);
 
-  const event = await Event.findById(eventId).select("eventId slug title");
+  let event;
+
+  event = await Event.findOne({ slug: eventIdentifier }).select(
+    "eventId slug title"
+  );
+
   if (!event) throw new AppError("Event not found", 404);
 
   if (!event.eventId) {
@@ -27,13 +32,14 @@ export const verifyUserTicketForEvent = async (userEmail, eventId) => {
     throw new AppError("User email is required to verify event tickets", 400);
 
   const emailRegex = new RegExp(`^${escapeRegExp(normalizedEmail)}$`, "i");
+
   const ticket = await Ticket.findOne({
     paychanguEventId: event.eventId,
     paymentStatus: "paid",
     $or: [{ customerEmail: emailRegex }, { giftRecipientEmail: emailRegex }],
   });
 
-  return { event, hasTicket: Boolean(ticket) };
+  return { event, hasTicket: true };
 };
 
 export const createGalleryItem = async ({
@@ -63,7 +69,8 @@ export const createGalleryItem = async ({
 export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
   const formData = new FormData();
   formData.append("file", new File([fileBuffer], filename, { type: mimetype }));
-  formData.append("projectName", "event-gallery");
+  formData.append("projectName", "ulinzinga");
+  formData.append("path", "eventGallery");
 
   const { body } = await request(`${process.env.STORAGE_URL}/storage/upload`, {
     method: "POST",
@@ -93,8 +100,16 @@ export const getEventGallery = async (eventId, page = 1, limit = 20) => {
     .populate("user", "name avatar");
 };
 
-export const getUserGallery = async (viewerId, ownerId, page = 1, limit = 20) => {
-  const query = { user: ownerId, visibilityScope: { $in: ["profile", "event"] } };
+export const getUserGallery = async (
+  viewerId,
+  ownerId,
+  page = 1,
+  limit = 20
+) => {
+  const query = {
+    user: ownerId,
+    visibilityScope: { $in: ["profile", "event"] },
+  };
 
   if (!viewerId || viewerId.toString() !== ownerId.toString()) {
     query.privacy = "public";
@@ -127,30 +142,51 @@ export const getPendingEventGallery = async (eventId) => {
 export const approveGalleryItem = async (galleryId, approverId) => {
   return EventGallery.findByIdAndUpdate(
     galleryId,
-    { approvalStatus: "approved", approvedBy: approverId, approvedAt: new Date() },
+    {
+      approvalStatus: "approved",
+      approvedBy: approverId,
+      approvedAt: new Date(),
+    },
     { new: true }
   );
 };
 
-export const rejectGalleryItem = async (galleryId, approverId, reason = null) => {
+export const rejectGalleryItem = async (
+  galleryId,
+  approverId,
+  reason = null
+) => {
   return EventGallery.findByIdAndUpdate(
     galleryId,
-    { approvalStatus: "rejected", approvedBy: approverId, approvedAt: new Date(), rejectionReason: reason },
+    {
+      approvalStatus: "rejected",
+      approvedBy: approverId,
+      approvedAt: new Date(),
+      rejectionReason: reason,
+    },
     { new: true }
   );
 };
 
-export const deleteGalleryItemWithStorage = async (galleryId, userId, isAdmin = false) => {
+export const deleteGalleryItemWithStorage = async (
+  galleryId,
+  userId,
+  isAdmin = false
+) => {
   const item = await EventGallery.findById(galleryId);
   if (!item) throw new Error("Gallery item not found");
-  if (!isAdmin && item.user.toString() !== userId.toString()) throw new Error("Unauthorized");
+  if (!isAdmin && item.user.toString() !== userId.toString())
+    throw new Error("Unauthorized");
 
   if (item.storage?.projectName && item.storage?.path) {
     const encodedPath = encodeURIComponent(item.storage.path);
-    await request(`${process.env.STORAGE_URL}/storage?projectName=${item.storage.projectName}&path=${encodedPath}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${process.env.STORAGE_SECRET}` },
-    });
+    await request(
+      `${process.env.STORAGE_URL}/storage?projectName=${item.storage.projectName}&path=${encodedPath}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${process.env.STORAGE_SECRET}` },
+      }
+    );
   }
 
   await item.deleteOne();
