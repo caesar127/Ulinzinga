@@ -14,6 +14,7 @@ import {
 export const uploadGalleryItem = async (req, res) => {
   try {
     const { visibilityScope, privacy, caption, eventId } = req.body;
+
     if (!req.file) return res.status(400).json({ message: "File is required" });
 
     let resolvedEventId = null;
@@ -29,19 +30,19 @@ export const uploadGalleryItem = async (req, res) => {
       );
 
       if (!hasTicket)
-        return res
-          .status(403)
-          .json({ message: "A paid ticket is required to upload for this event" });
+        return res.status(403).json({
+          message: "A paid ticket is required to upload for this event",
+        });
 
       resolvedEventId = event._id;
     }
-
+    
     const uploadData = await uploadToStorage(
       req.file.buffer,
       req.file.originalname,
       req.file.mimetype
     );
-
+    
     const type = uploadData.mimetype.startsWith("video") ? "video" : "image";
 
     const galleryItem = await createGalleryItem({
