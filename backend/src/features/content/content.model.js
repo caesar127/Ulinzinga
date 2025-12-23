@@ -1,75 +1,138 @@
 import mongoose from "mongoose";
 
+const ContentAnalyticsSchema = new mongoose.Schema({
+  views: { type: Number, default: 0 },
+  likes: { type: Number, default: 0 },
+});
+
 const ContentSchema = new mongoose.Schema(
   {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      auto: true,
     },
-    slug: {
-      type: String,
-      unique: true,
-      index: true,
-    },
-    body: {
-      type: String,
-      required: true,
-    },
-    media: {
-      type: [String],
-      default: [],
-    },
-    category: {
-      type: String,
-      enum: ["Announcement", "Recap", "Interview", "Highlight", "Other"],
-      default: "Other",
-    },
-    type: {
-      type: String,
-      enum: ["image", "video", "announcement"],
-      default: "image",
-    },
-    tags: {
-      type: [String],
-      default: [],
-    },
+
     event: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event",
-      required: true,
+      default: null,
+      index: true,
     },
-    createdBy: {
+
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
-    views: {
-      type: Number,
-      default: 0,
+
+    type: {
+      type: String,
+      enum: ["image", "video"],
+      required: true,
     },
-    likes: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    is_published: {
-      type: Boolean,
-      default: true,
+
+    mediaUrl: {
+      type: String,
+      required: true,
+    },
+
+    thumbnailUrl: {
+      type: String,
+      default: null,
+    },
+
+    caption: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: null,
+    },
+
+    visibilityScope: {
+      type: String,
+      enum: ["event", "profile", "vault"],
+      required: true,
+      index: true,
+    },
+
+    privacy: {
+      type: String,
+      enum: ["public", "private"],
+      default: "public",
+      index: true,
+    },
+
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+      index: true,
+    },
+
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+
+    rejectionReason: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+      default: null,
+    },
+
+    analytics: {
+      type: ContentAnalyticsSchema,
+      default: () => ({}),
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-ContentSchema.pre("save", function (next) {
-  if (!this.slug && this.title) {
-    this.slug = this.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "");
+ContentSchema.pre("validate", function (next) {
+  if (this.visibilityScope === "vault") {
+    this.privacy = "private";
+    this.approvalStatus = "approved";
+    this.event = null;
+    this.approvedBy = null;
+    this.approvedAt = null;
   }
+
+  if (this.visibilityScope === "profile") {
+    this.approvalStatus = "approved";
+    this.approvedBy = null;
+    this.approvedAt = null;
+  }
+
+  if (this.visibilityScope === "event" && !this.event) {
+    return next(new Error("Event content must reference an event"));
+  }
+
   next();
 });
 
-export default mongoose.model("Content", ContentSchema);
+ContentSchema.index({
+  event: 1,
+  visibilityScope: 1,
+  privacy: 1,
+  approvalStatus: 1,
+});
+
+ContentSchema.index({
+  user: 1,
+  visibilityScope: 1,
+  createdAt: -1,
+});
+
+const Content = mongoose.model("Content", ContentSchema);
+
+export default Content;
