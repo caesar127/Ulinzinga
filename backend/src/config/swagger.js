@@ -128,7 +128,7 @@ const openApiSpec = {
           createdAt: { type: "string", format: "date-time" },
         },
       },
-      EventGallery: {
+      Content: {
         type: "object",
         properties: {
           _id: { type: "string" },
@@ -171,7 +171,7 @@ const openApiSpec = {
     { name: "Auth - Google", description: "Google OAuth authentication" },
     { name: "Events", description: "Public event management" },
     { name: "Organizer Events", description: "Organizer event management" },
-    { name: "Event Gallery", description: "Event gallery management" },
+    { name: "Content", description: "Content management" },
     { name: "Wallet", description: "Wallet operations" },
     { name: "Savings Goals", description: "Savings goals management" },
     { name: "Connections", description: "User connections" },
@@ -930,11 +930,11 @@ const openApiSpec = {
       },
     },
 
-    // ==================== EVENT GALLERY ENDPOINTS ====================
+    // ==================== CONTENT ENDPOINTS ====================
     "/api/user/gallery/upload": {
       post: {
         summary: "Upload gallery item",
-        tags: ["Event Gallery"],
+        tags: ["Content"],
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -987,7 +987,7 @@ const openApiSpec = {
     "/api/user/gallery/event/{eventId}/access": {
       get: {
         summary: "Check event upload access",
-        tags: ["Event Gallery"],
+        tags: ["Content"],
         security: [{ bearerAuth: [] }],
         parameters: [
           {
@@ -1008,7 +1008,7 @@ const openApiSpec = {
     "/api/user/gallery/event/{eventId}": {
       get: {
         summary: "Fetch event gallery",
-        tags: ["Event Gallery"],
+        tags: ["Content"],
         parameters: [
           {
             in: "path",
@@ -1041,7 +1041,7 @@ const openApiSpec = {
                     success: { type: "boolean" },
                     data: {
                       type: "array",
-                      items: { $ref: "#/components/schemas/EventGallery" },
+                      items: { $ref: "#/components/schemas/Content" },
                     },
                     pagination: {
                       type: "object",
@@ -1064,7 +1064,7 @@ const openApiSpec = {
     "/api/user/gallery/user/{userId}": {
       get: {
         summary: "Fetch user gallery",
-        tags: ["Event Gallery"],
+        tags: ["Content"],
         parameters: [
           {
             in: "path",
@@ -1103,7 +1103,7 @@ const openApiSpec = {
                     success: { type: "boolean" },
                     data: {
                       type: "array",
-                      items: { $ref: "#/components/schemas/EventGallery" },
+                      items: { $ref: "#/components/schemas/Content" },
                     },
                     pagination: {
                       type: "object",
@@ -1126,7 +1126,7 @@ const openApiSpec = {
     "/api/user/gallery/vault": {
       get: {
         summary: "Fetch user vault",
-        tags: ["Event Gallery"],
+        tags: ["Content"],
         security: [{ bearerAuth: [] }],
         parameters: [
           {
@@ -1153,7 +1153,7 @@ const openApiSpec = {
                     success: { type: "boolean" },
                     data: {
                       type: "array",
-                      items: { $ref: "#/components/schemas/EventGallery" },
+                      items: { $ref: "#/components/schemas/Content" },
                     },
                     pagination: {
                       type: "object",
@@ -1176,7 +1176,7 @@ const openApiSpec = {
     "/api/user/gallery/pending/{eventId}": {
       get: {
         summary: "Fetch pending gallery items",
-        tags: ["Event Gallery"],
+        tags: ["Content"],
         security: [{ bearerAuth: [] }],
         parameters: [
           {
@@ -1198,7 +1198,7 @@ const openApiSpec = {
                     success: { type: "boolean" },
                     data: {
                       type: "array",
-                      items: { $ref: "#/components/schemas/EventGallery" },
+                      items: { $ref: "#/components/schemas/Content" },
                     },
                   },
                 },
@@ -1213,7 +1213,7 @@ const openApiSpec = {
     "/api/user/gallery/approve/{galleryId}": {
       post: {
         summary: "Approve gallery item",
-        tags: ["Event Gallery"],
+        tags: ["Content"],
         security: [{ bearerAuth: [] }],
         parameters: [
           {
@@ -1234,7 +1234,7 @@ const openApiSpec = {
     "/api/user/gallery/reject/{galleryId}": {
       post: {
         summary: "Reject gallery item",
-        tags: ["Event Gallery"],
+        tags: ["Content"],
         security: [{ bearerAuth: [] }],
         parameters: [
           {
@@ -1273,7 +1273,7 @@ const openApiSpec = {
     "/api/user/gallery/{galleryId}": {
       delete: {
         summary: "Delete gallery item",
-        tags: ["Event Gallery"],
+        tags: ["Content"],
         parameters: [
           {
             in: "path",
