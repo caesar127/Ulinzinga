@@ -15,6 +15,7 @@ import {
 const router = express.Router();
 
 router.get("/", getAllEvents);
+router.get("/search", getAllEvents);
 router.get("/:id", getEventById);
 router.post("/:eventSlug/purchase", initiatePurchase);
 router.post("/sync", syncEventsController);
