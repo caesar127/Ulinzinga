@@ -183,7 +183,25 @@ export const getAllEventsService = async (queryParams = {}) => {
       }
     });
 
-    const sortedEvents = mergedEvents.sort((a, b) => {
+    let filteredEvents = mergedEvents;
+
+    // Apply search filter if provided
+    if (queryParams.search) {
+      const searchTerm = queryParams.search.toLowerCase().trim();
+      filteredEvents = mergedEvents.filter(event => {
+        const title = (event.title || '').toLowerCase();
+        const description = (event.description || '').toLowerCase();
+        const venue = (event.venue || '').toLowerCase();
+        const organizer = (event.organizer || '').toLowerCase();
+
+        return title.includes(searchTerm) ||
+               description.includes(searchTerm) ||
+               venue.includes(searchTerm) ||
+               organizer.includes(searchTerm);
+      });
+    }
+
+    const sortedEvents = filteredEvents.sort((a, b) => {
       const dateA = a.start_date ? new Date(a.start_date) : a.createdAt;
       const dateB = b.start_date ? new Date(b.start_date) : b.createdAt;
       return sortOrder === 1 ? dateA - dateB : dateB - dateA;
