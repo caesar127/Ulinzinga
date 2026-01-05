@@ -26,21 +26,25 @@ const ContentSchema = new mongoose.Schema(
       index: true,
     },
 
-    type: {
-      type: String,
-      enum: ["image", "video"],
-      required: true,
-    },
-
-    mediaUrl: {
-      type: String,
-      required: true,
-    },
-
-    thumbnailUrl: {
-      type: String,
-      default: null,
-    },
+    medias: [{
+      type: {
+        type: String,
+        enum: ["image", "video"],
+        required: true,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
+      thumbnailUrl: {
+        type: String,
+        default: null,
+      },
+      storage: {
+        projectName: String,
+        path: String,
+      },
+    }],
 
     caption: {
       type: String,
