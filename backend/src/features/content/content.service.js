@@ -45,24 +45,18 @@ export const verifyUserTicketForEvent = async (userEmail, eventIdentifier) => {
 export const createContentItem = async ({
   userId,
   eventId = null,
-  type,
-  mediaUrl,
-  thumbnailUrl = null,
+  medias,
   caption = null,
   visibilityScope,
   privacy = "public",
-  storage,
 }) => {
   return Content.create({
     user: userId,
     event: eventId,
-    type,
-    mediaUrl,
-    thumbnailUrl,
+    medias,
     caption,
     visibilityScope,
     privacy,
-    storage,
   });
 };
 
@@ -186,17 +180,19 @@ export const deleteContentItemWithStorage = async (
   if (!isAdmin && item.user.toString() !== userId.toString())
     throw new Error("Unauthorized");
 
-  if (item.storage?.projectName && item.storage?.path) {
-    const encodedPath = encodeURIComponent(item.storage.path);
-    await request(
-      `${process.env.STORAGE_URL}/storage?projectName=${item.storage.projectName}&path=${encodedPath}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
-        },
-      }
-    );
+  for (const media of item.medias) {
+    if (media.storage?.projectName && media.storage?.path) {
+      const encodedPath = encodeURIComponent(media.storage.path);
+      await request(
+        `${process.env.STORAGE_URL}/storage?projectName=${media.storage.projectName}&path=${encodedPath}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
+          },
+        }
+      );
+    }
   }
 
   await item.deleteOne();
