@@ -170,6 +170,20 @@ const openApiSpec = {
           updatedAt: { type: "string", format: "date-time" },
         },
       },
+      User: {
+        type: "object",
+        properties: {
+          _id: { type: "string" },
+          name: { type: "string" },
+          email: { type: "string", format: "email" },
+          interests: {
+            type: "array",
+            items: { type: "string" },
+          },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+        },
+      },
     },
   },
   security: [
@@ -186,6 +200,8 @@ const openApiSpec = {
     { name: "Auth - Google", description: "Google OAuth authentication" },
     { name: "Events", description: "Public event management" },
     { name: "Organizer Events", description: "Organizer event management" },
+    // { name: "Users", description: "User management" },
+    { name: "User Events", description: "User event interactions" },
     { name: "Content", description: "Content management" },
     { name: "Wallet", description: "Wallet operations" },
     { name: "Savings Goals", description: "Savings goals management" },
@@ -374,6 +390,487 @@ const openApiSpec = {
         security: [{ bearerAuth: [] }],
         responses: {
           200: { description: "Current user data" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+
+    // ==================== USER AUTH ENDPOINTS ====================
+    "/api/user/auth/user/signup": {
+      post: {
+        summary: "Register a new user",
+        tags: ["Auth - User"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["email", "password", "name"],
+                properties: {
+                  email: { type: "string", format: "email" },
+                  password: { type: "string", minLength: 6 },
+                  name: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: "User registered successfully" },
+          400: { description: "Validation error" },
+        },
+      },
+    },
+    "/api/user/auth/user/signin": {
+      post: {
+        summary: "User login",
+        tags: ["Auth - User"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["email", "password"],
+                properties: {
+                  email: { type: "string", format: "email" },
+                  password: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Login successful" },
+          401: { description: "Invalid credentials" },
+        },
+      },
+    },
+    "/api/user/auth/user/logout": {
+      post: {
+        summary: "User logout",
+        tags: ["Auth - User"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: "Logout successful" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/auth/me": {
+      get: {
+        summary: "Get current logged-in user",
+        tags: ["Auth - User"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: "Current user data" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+
+    // ==================== USERS ENDPOINTS ====================
+    // "/api/user/users": {
+    //   post: {
+    //     summary: "Create a new user",
+    //     tags: ["Users"],
+    //     requestBody: {
+    //       required: true,
+    //       content: {
+    //         "application/json": {
+    //           schema: {
+    //             type: "object",
+    //             required: ["name", "email"],
+    //             properties: {
+    //               name: { type: "string" },
+    //               email: { type: "string", format: "email" },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     responses: {
+    //       201: { description: "User created successfully" },
+    //       400: { description: "Validation error" },
+    //     },
+    //   },
+    //   get: {
+    //     summary: "Get all users",
+    //     tags: ["Users"],
+    //     responses: {
+    //       200: {
+    //         description: "List of users",
+    //         content: {
+    //           "application/json": {
+    //             schema: {
+    //               type: "array",
+    //               items: { $ref: "#/components/schemas/User" },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    // },
+    // "/api/user/users/{id}": {
+    //   get: {
+    //     summary: "Get user by ID",
+    //     tags: ["Users"],
+    //     parameters: [
+    //       {
+    //         in: "path",
+    //         name: "id",
+    //         required: true,
+    //         schema: { type: "string" },
+    //         description: "User ID",
+    //       },
+    //     ],
+    //     responses: {
+    //       200: {
+    //         description: "User details",
+    //         content: {
+    //           "application/json": {
+    //             schema: { $ref: "#/components/schemas/User" },
+    //           },
+    //         },
+    //       },
+    //       404: { description: "User not found" },
+    //     },
+    //   },
+    //   put: {
+    //     summary: "Update user",
+    //     tags: ["Users"],
+    //     parameters: [
+    //       {
+    //         in: "path",
+    //         name: "id",
+    //         required: true,
+    //         schema: { type: "string" },
+    //         description: "User ID",
+    //       },
+    //     ],
+    //     requestBody: {
+    //       required: true,
+    //       content: {
+    //         "application/json": {
+    //           schema: {
+    //             type: "object",
+    //             properties: {
+    //               name: { type: "string" },
+    //               email: { type: "string", format: "email" },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     responses: {
+    //       200: { description: "User updated successfully" },
+    //       404: { description: "User not found" },
+    //     },
+    //   },
+    //   delete: {
+    //     summary: "Delete user",
+    //     tags: ["Users"],
+    //     parameters: [
+    //       {
+    //         in: "path",
+    //         name: "id",
+    //         required: true,
+    //         schema: { type: "string" },
+    //         description: "User ID",
+    //       },
+    //     ],
+    //     responses: {
+    //       200: { description: "User deleted successfully" },
+    //       404: { description: "User not found" },
+    //     },
+    //   },
+    // },
+    // "/api/user/users/profile/{id}": {
+    //   post: {
+    //     summary: "Get current user profile",
+    //     tags: ["Users"],
+    //     parameters: [
+    //       {
+    //         in: "path",
+    //         name: "id",
+    //         required: true,
+    //         schema: { type: "string" },
+    //         description: "User ID",
+    //       },
+    //     ],
+    //     responses: {
+    //       200: {
+    //         description: "User profile",
+    //         content: {
+    //           "application/json": {
+    //             schema: { $ref: "#/components/schemas/User" },
+    //           },
+    //         },
+    //       },
+    //       404: { description: "User not found" },
+    //     },
+    //   },
+    // },
+    // "/api/user/users/{id}/profile": {
+    //   put: {
+    //     summary: "Update user profile",
+    //     tags: ["Users"],
+    //     parameters: [
+    //       {
+    //         in: "path",
+    //         name: "id",
+    //         required: true,
+    //         schema: { type: "string" },
+    //         description: "User ID",
+    //       },
+    //     ],
+    //     requestBody: {
+    //       required: true,
+    //       content: {
+    //         "application/json": {
+    //           schema: {
+    //             type: "object",
+    //             properties: {
+    //               name: { type: "string" },
+    //               email: { type: "string", format: "email" },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     responses: {
+    //       200: { description: "Profile updated successfully" },
+    //       404: { description: "User not found" },
+    //     },
+    //   },
+    // },
+    // "/api/user/users/{id}/interests": {
+    //   put: {
+    //     summary: "Update user interests",
+    //     tags: ["Users"],
+    //     parameters: [
+    //       {
+    //         in: "path",
+    //         name: "id",
+    //         required: true,
+    //         schema: { type: "string" },
+    //         description: "User ID",
+    //       },
+    //     ],
+    //     requestBody: {
+    //       required: true,
+    //       content: {
+    //         "application/json": {
+    //           schema: {
+    //             type: "object",
+    //             required: ["interests"],
+    //             properties: {
+    //               interests: {
+    //                 type: "array",
+    //                 items: { type: "string" },
+    //                 minItems: 1,
+    //               },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     responses: {
+    //       200: { description: "Interests updated successfully" },
+    //       400: { description: "Validation error" },
+    //       404: { description: "User not found" },
+    //     },
+    //   },
+    // },
+
+    // ==================== USER EVENTS ENDPOINTS ====================
+    "/api/user/events/recommended": {
+      get: {
+        summary: "Get recommended events",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "List of recommended events",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Event" },
+                },
+              },
+            },
+          },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/events/trending": {
+      get: {
+        summary: "Get trending events",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "List of trending events",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Event" },
+                },
+              },
+            },
+          },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/events/favorites/events": {
+      post: {
+        summary: "Add event to favorites",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["eventId"],
+                properties: {
+                  eventId: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Event added to favorites" },
+          400: { description: "Invalid request" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/events/favorites/events/{eventId}": {
+      delete: {
+        summary: "Remove event from favorites",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "eventId",
+            required: true,
+            schema: { type: "string" },
+            description: "Event ID",
+          },
+        ],
+        responses: {
+          200: { description: "Event removed from favorites" },
+          404: { description: "Event not found in favorites" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/events/favorites/organizers": {
+      post: {
+        summary: "Add organizer to favorites",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["organizerId"],
+                properties: {
+                  organizerId: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Organizer added to favorites" },
+          400: { description: "Invalid request" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/events/favorites/organizers/{organizerId}": {
+      delete: {
+        summary: "Remove organizer from favorites",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "organizerId",
+            required: true,
+            schema: { type: "string" },
+            description: "Organizer ID",
+          },
+        ],
+        responses: {
+          200: { description: "Organizer removed from favorites" },
+          404: { description: "Organizer not found in favorites" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/events/tickets": {
+      get: {
+        summary: "Get user tickets",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: "List of user tickets" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/events/tickets/{eventId}": {
+      get: {
+        summary: "Get user tickets for event",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "eventId",
+            required: true,
+            schema: { type: "string" },
+            description: "Event ID",
+          },
+        ],
+        responses: {
+          200: { description: "User tickets for the event" },
+          404: { description: "Event not found" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/tickets/{email}": {
+      get: {
+        summary: "Get user tickets by email",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "email",
+            required: true,
+            schema: { type: "string", format: "email" },
+            description: "User email",
+          },
+        ],
+        responses: {
+          200: { description: "User tickets" },
+          404: { description: "No tickets found" },
           401: { description: "Unauthorized" },
         },
       },
@@ -1868,7 +2365,7 @@ const openApiSpec = {
     },
 
     // ==================== CONNECTIONS ENDPOINTS ====================
-    "/api/connections": {
+    "/api/user/connections": {
       get: {
         summary: "List all connections",
         tags: ["Connections"],
@@ -1912,7 +2409,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/connections/{id}": {
+    "/api/user/connections/{id}": {
       delete: {
         summary: "Remove a connection",
         tags: ["Connections"],
@@ -1932,7 +2429,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/connections/pending": {
+    "/api/user/connections/pending": {
       get: {
         summary: "List pending connection requests",
         tags: ["Connections"],
@@ -1942,7 +2439,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/connections/sent": {
+    "/api/user/connections/sent": {
       get: {
         summary: "List sent connection requests",
         tags: ["Connections"],
@@ -1952,7 +2449,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/connections/{id}/accept": {
+    "/api/user/connections/{id}/accept": {
       patch: {
         summary: "Accept connection request",
         tags: ["Connections"],
@@ -1972,7 +2469,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/connections/{id}/reject": {
+    "/api/user/connections/{id}/reject": {
       patch: {
         summary: "Reject connection request",
         tags: ["Connections"],
@@ -1992,7 +2489,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/connections/suggestions": {
+    "/api/user/connections/suggestions": {
       get: {
         summary: "Get suggested connections",
         tags: ["Connections"],
@@ -2010,7 +2507,7 @@ const openApiSpec = {
         },
       },
     },
-    "/api/connections/suggestions/advanced": {
+    "/api/user/connections/suggestions/advanced": {
       get: {
         summary: "Get advanced suggested connections",
         tags: ["Connections"],
