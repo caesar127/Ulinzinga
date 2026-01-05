@@ -15,8 +15,8 @@ export const uploadContent = async (req, res) => {
   try {
     const { visibilityScope, privacy, caption, eventId } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ message: "File is required" });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "At least one file is required" });
     }
 
     let resolvedEventId = null;
@@ -42,26 +42,34 @@ export const uploadContent = async (req, res) => {
       resolvedEventId = event._id;
     }
 
-    const uploadData = await uploadToStorage(
-      req.file.buffer,
-      req.file.originalname,
-      req.file.mimetype
-    );
+    const medias = [];
+    for (const file of req.files) {
+      const uploadData = await uploadToStorage(
+        file.buffer,
+        file.originalname,
+        file.mimetype
+      );
 
-    const type = uploadData.mimetype.startsWith("video") ? "video" : "image";
+      const type = uploadData.mimetype.startsWith("video") ? "video" : "image";
+
+      medias.push({
+        type,
+        url: uploadData.url,
+        thumbnailUrl: null, // Can be set later if needed
+        storage: {
+          projectName: uploadData.projectName,
+          path: uploadData.path,
+        },
+      });
+    }
 
     const contentItem = await createContentItem({
       userId: req.user.userId || req.user.id,
       eventId: resolvedEventId,
-      type,
-      mediaUrl: uploadData.url,
+      medias,
       caption,
       visibilityScope,
       privacy,
-      storage: {
-        projectName: uploadData.projectName,
-        path: uploadData.path,
-      },
     });
 
     res.status(201).json({ success: true, data: contentItem });
