@@ -8,6 +8,7 @@ import {
   removeFavoriteOrganizer,
   getUserTickets,
   getUserEventDetails,
+  getEventsByInterests,
 } from "./userEvents.controller.js";
 import { verifyToken } from "../../core/middleware/auth.middleware.js";
 
@@ -17,6 +18,7 @@ router.use(verifyToken);
 
 router.get("/recommended", getRecommendedEvents);
 router.get("/trending", getTrendingEvents);
+router.get("/interests", getEventsByInterests);
 
 router.post("/favorites/events", addFavoriteEvent);
 router.delete("/favorites/events/:eventId", removeFavoriteEvent);
