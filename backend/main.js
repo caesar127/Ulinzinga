@@ -21,12 +21,12 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed!'), false);
+      cb(new Error("Only image files are allowed!"), false);
     }
-  }
+  },
 });
 
 app.use(
@@ -65,8 +65,8 @@ app.use(
   })
 );
 
-app.use("/api/organizer-events/:id/banner", upload.single('banner'));
-app.use("/api/organizer-events/:id/logo", upload.single('logo'));
+app.use("/api/organizer-events/:id/banner", upload.single("banner"));
+app.use("/api/organizer-events/:id/logo", upload.single("logo"));
 
 app.use("/api", routes);
 
