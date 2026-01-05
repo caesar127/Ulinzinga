@@ -691,15 +691,42 @@ const openApiSpec = {
         summary: "Get recommended events",
         tags: ["User Events"],
         security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "query",
+            name: "page",
+            schema: { type: "integer", minimum: 1, default: 1 },
+            description: "Page number (minimum: 1)",
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 5, maximum: 50, default: 20 },
+            description: "Items per page (minimum: 5, maximum: 50)",
+          },
+          {
+            in: "query",
+            name: "sortBy",
+            schema: {
+              type: "string",
+              enum: ["start_date", "createdAt", "title"],
+              default: "createdAt"
+            },
+            description: "Sort field",
+          },
+          {
+            in: "query",
+            name: "sortOrder",
+            schema: { type: "string", enum: ["asc", "desc"], default: "desc" },
+            description: "Sort order",
+          },
+        ],
         responses: {
           200: {
-            description: "List of recommended events",
+            description: "Paginated list of recommended events",
             content: {
               "application/json": {
-                schema: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/Event" },
-                },
+                schema: { $ref: "#/components/schemas/PaginatedEvents" },
               },
             },
           },
@@ -712,15 +739,74 @@ const openApiSpec = {
         summary: "Get trending events",
         tags: ["User Events"],
         security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "query",
+            name: "page",
+            schema: { type: "integer", minimum: 1, default: 1 },
+            description: "Page number (minimum: 1)",
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 5, maximum: 50, default: 20 },
+            description: "Items per page (minimum: 5, maximum: 50)",
+          },
+        ],
         responses: {
           200: {
-            description: "List of trending events",
+            description: "Paginated list of trending events",
             content: {
               "application/json": {
-                schema: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/Event" },
-                },
+                schema: { $ref: "#/components/schemas/PaginatedEvents" },
+              },
+            },
+          },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/events/interests": {
+      get: {
+        summary: "Get events by user interests",
+        tags: ["User Events"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "query",
+            name: "page",
+            schema: { type: "integer", minimum: 1, default: 1 },
+            description: "Page number (minimum: 1)",
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 5, maximum: 50, default: 20 },
+            description: "Items per page (minimum: 5, maximum: 50)",
+          },
+          {
+            in: "query",
+            name: "sortBy",
+            schema: {
+              type: "string",
+              enum: ["start_date", "createdAt", "title"],
+              default: "createdAt"
+            },
+            description: "Sort field",
+          },
+          {
+            in: "query",
+            name: "sortOrder",
+            schema: { type: "string", enum: ["asc", "desc"], default: "desc" },
+            description: "Sort order",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Paginated list of events matching user interests",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PaginatedEvents" },
               },
             },
           },
@@ -879,7 +965,7 @@ const openApiSpec = {
     // ==================== EVENTS ENDPOINTS ====================
     "/api/public/events": {
       get: {
-        summary: "Get all events with pagination",
+        summary: "Get all events",
         tags: ["Events"],
         parameters: [
           {
@@ -965,6 +1051,100 @@ const openApiSpec = {
         },
       },
     },
+    "/api/public/events/search": {
+      get: {
+        summary: "Search events",
+        tags: ["Events"],
+        parameters: [
+          {
+            in: "query",
+            name: "search",
+            schema: { type: "string" },
+            description: "Search term to filter events by title, description, venue, or organizer",
+          },
+          {
+            in: "query",
+            name: "page",
+            schema: { type: "integer", minimum: 1, default: 1 },
+            description: "Page number (minimum: 1)",
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 5, maximum: 50, default: 20 },
+            description: "Items per page (minimum: 5, maximum: 50)",
+          },
+          {
+            in: "query",
+            name: "sortBy",
+            schema: {
+              type: "string",
+              enum: ["start_date", "createdAt", "updatedAt", "analytics.views", "title"],
+              default: "start_date"
+            },
+            description: "Sort field",
+          },
+          {
+            in: "query",
+            name: "sortOrder",
+            schema: { type: "string", enum: ["asc", "desc"], default: "desc" },
+            description: "Sort order",
+          },
+          {
+            in: "query",
+            name: "visible",
+            schema: { type: "boolean" },
+            description: "Filter by visibility",
+          },
+          {
+            in: "query",
+            name: "isActive",
+            schema: { type: "boolean" },
+            description: "Filter by active status",
+          },
+          {
+            in: "query",
+            name: "isPast",
+            schema: { type: "boolean" },
+            description: "Filter by past events",
+          },
+          {
+            in: "query",
+            name: "startDate",
+            schema: { type: "string", format: "date" },
+            description: "Filter events starting from date (ISO 8601)",
+          },
+          {
+            in: "query",
+            name: "endDate",
+            schema: { type: "string", format: "date" },
+            description: "Filter events ending at date (ISO 8601)",
+          },
+          {
+            in: "query",
+            name: "onDate",
+            schema: { type: "string", format: "date" },
+            description: "Filter events happening on specific date (ISO 8601)",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Paginated list of events matching the search",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PaginatedEvents" },
+              },
+            },
+          },
+          400: {
+            description: "Invalid query parameters",
+          },
+          500: {
+            description: "Internal server error",
+          },
+        },
+      },
+    },
     "/api/public/events/{id}": {
       get: {
         summary: "Get event by ID",
@@ -1026,122 +1206,122 @@ const openApiSpec = {
         },
       },
     },
-    "/api/public/events/sync": {
-      post: {
-        summary: "Sync events from external source",
-        tags: ["Events"],
-        security: [{ bearerAuth: [] }],
-        responses: {
-          200: { description: "Events synced successfully" },
-        },
-      },
-    },
-    "/api/public/events/cleanup-orphaned": {
-      post: {
-        summary: "Cleanup orphaned events",
-        tags: ["Events"],
-        security: [{ bearerAuth: [] }],
-        responses: {
-          200: { description: "Orphaned events cleaned up" },
-        },
-      },
-    },
-    "/api/public/events/{id}/visibility": {
-      put: {
-        summary: "Update event visibility",
-        tags: ["Events"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            in: "path",
-            name: "id",
-            required: true,
-            schema: { type: "string" },
-            description: "Event ID",
-          },
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["visibility"],
-                properties: {
-                  visibility: { type: "string", enum: ["public", "private"] },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: { description: "Visibility updated" },
-          404: { description: "Event not found" },
-        },
-      },
-    },
-    "/api/public/events/{id}/status": {
-      put: {
-        summary: "Update event status",
-        tags: ["Events"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            in: "path",
-            name: "id",
-            required: true,
-            schema: { type: "string" },
-            description: "Event ID",
-          },
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["status"],
-                properties: {
-                  status: {
-                    type: "string",
-                    enum: ["draft", "published", "cancelled"],
-                  },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: { description: "Status updated" },
-          404: { description: "Event not found" },
-        },
-      },
-    },
-    "/api/public/tickets/{email}": {
-      get: {
-        summary: "Get user tickets by email",
-        tags: ["Events"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            in: "path",
-            name: "email",
-            required: true,
-            schema: { type: "string", format: "email" },
-            description: "User email",
-          },
-        ],
-        responses: {
-          200: { description: "User tickets" },
-          404: { description: "No tickets found" },
-        },
-      },
-    },
+    // "/api/public/events/sync": {
+    //   post: {
+    //     summary: "Sync events from external source",
+    //     tags: ["Events"],
+    //     security: [{ bearerAuth: [] }],
+    //     responses: {
+    //       200: { description: "Events synced successfully" },
+    //     },
+    //   },
+    // },
+    // "/api/public/events/cleanup-orphaned": {
+    //   post: {
+    //     summary: "Cleanup orphaned events",
+    //     tags: ["Events"],
+    //     security: [{ bearerAuth: [] }],
+    //     responses: {
+    //       200: { description: "Orphaned events cleaned up" },
+    //     },
+    //   },
+    // },
+    // "/api/public/events/{id}/visibility": {
+    //   put: {
+    //     summary: "Update event visibility",
+    //     tags: ["Events"],
+    //     security: [{ bearerAuth: [] }],
+    //     parameters: [
+    //       {
+    //         in: "path",
+    //         name: "id",
+    //         required: true,
+    //         schema: { type: "string" },
+    //         description: "Event ID",
+    //       },
+    //     ],
+    //     requestBody: {
+    //       required: true,
+    //       content: {
+    //         "application/json": {
+    //           schema: {
+    //             type: "object",
+    //             required: ["visibility"],
+    //             properties: {
+    //               visibility: { type: "string", enum: ["public", "private"] },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     responses: {
+    //       200: { description: "Visibility updated" },
+    //       404: { description: "Event not found" },
+    //     },
+    //   },
+    // },
+    // "/api/public/events/{id}/status": {
+    //   put: {
+    //     summary: "Update event status",
+    //     tags: ["Events"],
+    //     security: [{ bearerAuth: [] }],
+    //     parameters: [
+    //       {
+    //         in: "path",
+    //         name: "id",
+    //         required: true,
+    //         schema: { type: "string" },
+    //         description: "Event ID",
+    //       },
+    //     ],
+    //     requestBody: {
+    //       required: true,
+    //       content: {
+    //         "application/json": {
+    //           schema: {
+    //             type: "object",
+    //             required: ["status"],
+    //             properties: {
+    //               status: {
+    //                 type: "string",
+    //                 enum: ["draft", "published", "cancelled"],
+    //               },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     responses: {
+    //       200: { description: "Status updated" },
+    //       404: { description: "Event not found" },
+    //     },
+    //   },
+    // },
+    // "/api/public/tickets/{email}": {
+    //   get: {
+    //     summary: "Get user tickets by email",
+    //     tags: ["Events"],
+    //     security: [{ bearerAuth: [] }],
+    //     parameters: [
+    //       {
+    //         in: "path",
+    //         name: "email",
+    //         required: true,
+    //         schema: { type: "string", format: "email" },
+    //         description: "User email",
+    //       },
+    //     ],
+    //     responses: {
+    //       200: { description: "User tickets" },
+    //       404: { description: "No tickets found" },
+    //     },
+    //   },
+    // },
 
     // ==================== ORGANIZER EVENTS ENDPOINTS ====================
     "/api/organizer": {
       get: {
-        summary: "Get organizer events with pagination",
+        summary: "Get organizer events",
         tags: ["Organizer Events"],
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -1224,220 +1404,6 @@ const openApiSpec = {
           500: {
             description: "Internal server error",
           },
-        },
-      },
-      post: {
-        summary: "Create a new event",
-        tags: ["Organizer Events"],
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["title", "description", "venue_name", "location", "start_date"],
-                properties: {
-                  title: { type: "string", description: "Event title" },
-                  description: { type: "string", description: "Event description" },
-                  slug: { type: "string", description: "Event slug (optional)" },
-                  venue_name: { type: "string", description: "Venue name" },
-                  venue_address: { type: "string", description: "Venue address" },
-                  location: { type: "string", description: "Event location" },
-                  start_date: { type: "string", format: "date-time", description: "Start date and time" },
-                  end_date: { type: "string", format: "date-time", description: "End date and time" },
-                  start_time: { type: "string", description: "Start time (HH:MM format)" },
-                  end_time: { type: "string", description: "End time (HH:MM format)" },
-                  timezone: { type: "string", default: "UTC", description: "Timezone" },
-                  terms_text: { type: "string", description: "Terms and conditions" },
-                  color: { type: "string", description: "Event color theme" },
-                  package_data: { type: "object", description: "Ticket packages data" },
-                  category: { type: "string", description: "Event category" },
-                  capacity: { type: "integer", description: "Event capacity" },
-                  isVisible: { type: "boolean", default: true, description: "Event visibility" },
-                  isDraft: { type: "boolean", default: false, description: "Save as draft" },
-                },
-              },
-            },
-            "multipart/form-data": {
-              schema: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  description: { type: "string" },
-                  banner: { type: "string", format: "binary", description: "Event banner image" },
-                  logo: { type: "string", format: "binary", description: "Event logo image" },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          201: {
-            description: "Event created successfully",
-          },
-          400: {
-            description: "Validation error or missing required fields",
-          },
-          500: {
-            description: "Internal server error",
-          },
-        },
-      },
-    },
-    "/api/organizer/{id}": {
-      get: {
-        summary: "Get organizer event by ID",
-        tags: ["Organizer Events"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            in: "path",
-            name: "id",
-            required: true,
-            schema: { type: "string" },
-            description: "Event ID",
-          },
-        ],
-        responses: {
-          200: {
-            description: "Event details",
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/OrganizerEvent" },
-              },
-            },
-          },
-          404: { description: "Event not found" },
-        },
-      },
-      put: {
-        summary: "Update organizer event",
-        tags: ["Organizer Events"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            in: "path",
-            name: "id",
-            required: true,
-            schema: { type: "string" },
-            description: "Event ID",
-          },
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  description: { type: "string" },
-                  venue_name: { type: "string" },
-                  location: { type: "string" },
-                  start_date: { type: "string", format: "date-time" },
-                  end_date: { type: "string", format: "date-time" },
-                  isActive: { type: "boolean" },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: { description: "Event updated successfully" },
-          404: { description: "Event not found" },
-        },
-      },
-      delete: {
-        summary: "Delete organizer event",
-        tags: ["Organizer Events"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            in: "path",
-            name: "id",
-            required: true,
-            schema: { type: "string" },
-            description: "Event ID",
-          },
-        ],
-        responses: {
-          200: { description: "Event deleted successfully" },
-          404: { description: "Event not found" },
-        },
-      },
-    },
-    "/api/organizer/{id}/banner": {
-      post: {
-        summary: "Upload event banner",
-        tags: ["Organizer Events"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            in: "path",
-            name: "id",
-            required: true,
-            schema: { type: "string" },
-            description: "Event ID",
-          },
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            "multipart/form-data": {
-              schema: {
-                type: "object",
-                properties: {
-                  banner: {
-                    type: "string",
-                    format: "binary",
-                    description: "Banner image file",
-                  },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: { description: "Banner uploaded successfully" },
-          400: { description: "No file provided or invalid file" },
-        },
-      },
-    },
-    "/api/organizer/{id}/logo": {
-      post: {
-        summary: "Upload event logo",
-        tags: ["Organizer Events"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            in: "path",
-            name: "id",
-            required: true,
-            schema: { type: "string" },
-            description: "Event ID",
-          },
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            "multipart/form-data": {
-              schema: {
-                type: "object",
-                properties: {
-                  logo: {
-                    type: "string",
-                    format: "binary",
-                    description: "Logo image file",
-                  },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: { description: "Logo uploaded successfully" },
-          400: { description: "No file provided or invalid file" },
         },
       },
     },
