@@ -24,7 +24,6 @@ router.delete("/favorites/events/:eventId", removeFavoriteEvent);
 router.post("/favorites/organizers", addFavoriteOrganizer);
 router.delete("/favorites/organizers/:organizerId", removeFavoriteOrganizer);
 
-// Get user's purchased events/tickets
 router.get("/tickets", getUserTickets);
 router.get("/tickets/:eventId", getUserEventDetails);
 
