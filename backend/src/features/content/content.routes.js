@@ -16,7 +16,7 @@ import { verifyToken } from "../../core/middleware/auth.middleware.js";
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post("/upload", verifyToken, upload.single("file"), uploadContent);
+router.post("/upload", verifyToken, upload.array("files", 10), uploadContent);
 
 router.get("/event/:eventId/access", verifyToken, checkEventUploadAccess);
 router.get("/event/:eventId", fetchEventContent);
