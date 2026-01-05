@@ -134,9 +134,24 @@ const openApiSpec = {
           _id: { type: "string" },
           event: { type: "string" },
           user: { type: "string" },
-          type: { type: "string", enum: ["image", "video"] },
-          mediaUrl: { type: "string" },
-          thumbnailUrl: { type: "string" },
+          medias: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                type: { type: "string", enum: ["image", "video"] },
+                url: { type: "string" },
+                thumbnailUrl: { type: "string" },
+                storage: {
+                  type: "object",
+                  properties: {
+                    projectName: { type: "string" },
+                    path: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
           caption: { type: "string" },
           visibilityScope: { type: "string", enum: ["event", "profile", "vault"] },
           privacy: { type: "string", enum: ["public", "private"] },
@@ -933,7 +948,7 @@ const openApiSpec = {
     // ==================== CONTENT ENDPOINTS ====================
     "/api/user/gallery/upload": {
       post: {
-        summary: "Upload gallery item",
+        summary: "Upload gallery item with multiple medias",
         tags: ["Content"],
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -943,19 +958,17 @@ const openApiSpec = {
               schema: {
                 type: "object",
                 properties: {
-                  file: {
-                    type: "string",
-                    format: "binary",
-                    description: "Image or video file to upload",
-                  },
-                  type: {
-                    type: "string",
-                    enum: ["image", "video"],
-                    description: "Type of media file",
+                  files: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                      format: "binary",
+                    },
+                    description: "Image or video files to upload (up to 10 files)",
                   },
                   caption: {
                     type: "string",
-                    description: "Optional caption for the media",
+                    description: "Optional caption for the post",
                   },
                   visibilityScope: {
                     type: "string",
@@ -972,7 +985,7 @@ const openApiSpec = {
                     description: "Event ID (required if visibilityScope is 'event')",
                   },
                 },
-                required: ["file", "type", "visibilityScope"],
+                required: ["files", "visibilityScope"],
               },
             },
           },
