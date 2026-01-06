@@ -11,7 +11,6 @@ import {
 export const create = async (req, res) => {
   try {
     const organizerToken = req.headers.authorization?.replace("Bearer ", "");
-    console.log(organizerToken);
     console.log(req.body);
     const {
       title,
