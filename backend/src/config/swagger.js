@@ -908,17 +908,6 @@ const openApiSpec = {
         },
       },
     },
-    "/api/user/events/tickets": {
-      get: {
-        summary: "Get user tickets",
-        tags: ["User Events"],
-        security: [{ bearerAuth: [] }],
-        responses: {
-          200: { description: "List of user tickets" },
-          401: { description: "Unauthorized" },
-        },
-      },
-    },
     "/api/user/events/tickets/{eventId}": {
       get: {
         summary: "Get user tickets for event",
@@ -940,23 +929,34 @@ const openApiSpec = {
         },
       },
     },
-    "/api/user/tickets/{email}": {
+    "/api/user/events/purchasedevents": {
       get: {
-        summary: "Get user tickets by email",
+        summary: "Get events that the user purchased tickets for",
         tags: ["User Events"],
         security: [{ bearerAuth: [] }],
         parameters: [
           {
-            in: "path",
-            name: "email",
-            required: true,
-            schema: { type: "string", format: "email" },
-            description: "User email",
+            in: "query",
+            name: "page",
+            schema: { type: "integer", minimum: 1, default: 1 },
+            description: "Page number (minimum: 1)",
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            description: "Items per page (minimum: 1, maximum: 50)",
           },
         ],
         responses: {
-          200: { description: "User tickets" },
-          404: { description: "No tickets found" },
+          200: {
+            description: "Paginated list of events user purchased tickets for",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PaginatedEvents" },
+              },
+            },
+          },
           401: { description: "Unauthorized" },
         },
       },
