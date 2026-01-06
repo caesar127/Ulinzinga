@@ -82,29 +82,45 @@ export const addFavoriteOrganizer = async (req, res) => {
   }
 };
 
-export const getUserTickets = async (req, res) => {
-  console.log("here")
+export const getUserPurchasedEvents = async (req, res) => {
   try {
-    console.log(req.user)
     const userId = req.user?.userId;
     
     if (!userId) {
-      return res.status(401).json({ success: false, message: "User not authenticated" });
+      return res.status(401).json({ 
+        status: "error", 
+        message: "User not authenticated" 
+      });
     }
     
     const { page = 1, limit = 20 } = req.query;
-    
-    const result = await userEventsService.getUserTicketsService(
+
+    const result = await userEventsService.getUserPurchasedEventsService(
       userId,
       parseInt(limit),
       parseInt(page)
     );
     
-    return res.json({ success: true, ...result });
+    return res.status(200).json({
+      status: "success",
+      message: "User tickets fetched successfully",
+      data: result.events,
+      pagination: {
+        currentPage: result.page,
+        totalPages: Math.ceil(result.total / result.limit),
+        totalCount: result.total,
+        limit: result.limit,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.page > 1,
+      },
+    });
   } catch (error) {
     console.error('Error in getUserTickets:', error);
     const status = error.message.includes('User not found') ? 404 : 500;
-    return res.status(status).json({ success: false, message: error.message });
+    return res.status(status).json({
+      status: "error", 
+      message: error.message 
+    });
   }
 };
 
