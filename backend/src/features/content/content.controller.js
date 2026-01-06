@@ -55,7 +55,7 @@ export const uploadContent = async (req, res) => {
       medias.push({
         type,
         url: uploadData.url,
-        thumbnailUrl: null, // Can be set later if needed
+        thumbnailUrl: null, 
         storage: {
           projectName: uploadData.projectName,
           path: uploadData.path,
@@ -94,16 +94,43 @@ export const fetchEventContent = async (req, res) => {
 
 export const fetchUserContent = async (req, res) => {
   const { userId } = req.params;
-  const { page, limit } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const viewerId = req.user?.id;
+  const ownerId = userId;
 
-  const data = await getUserContent(
-    req.user?.id,
-    userId,
-    parseInt(page) || 1,
-    parseInt(limit) || 20
-  );
+  const query = {
+    user: ownerId,
+    visibilityScope: { $in: ["profile", "event"] },
+  };
 
-  res.json({ success: true, data });
+  if (!viewerId || viewerId.toString() !== ownerId.toString()) {
+    query.privacy = "public";
+    query.approvalStatus = "approved";
+  }
+
+  const [content, totalCount] = await Promise.all([
+    Content.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit),
+    Content.countDocuments(query),
+  ]);
+
+  const totalPages = Math.ceil(totalCount / limit);
+
+  res.json({
+    success: true,
+    data: content,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalCount,
+      limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    },
+  });
 };
 
 export const fetchVault = async (req, res) => {
