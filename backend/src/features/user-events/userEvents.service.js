@@ -269,7 +269,7 @@ export const getEventsByInterestsService = async (userId, queryParams = {}) => {
   };
 };
 
-export const getUserTicketsService = async (userId, limit = 50, page = 1) => {
+export const getUserPurchasedEventsService = async (userId, limit = 50, page = 1) => {
   try {
     const user = await User.findById(userId).select("email");
     if (!user?.email) {
