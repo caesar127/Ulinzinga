@@ -1,107 +1,129 @@
 import React from "react";
-import { CalendarDaysIcon, UsersIcon, TicketIcon, ChartBarIcon } from "@heroicons/react/24/outline";
+import {
+  CalendarDaysIcon,
+  UsersIcon,
+  TicketIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/outline";
 
 const DashboardPage = () => {
   return (
-    <div>
-      {/* Header */}
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">
-        Organizer Dashboard
-      </h1>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Total Events */}
-        <div className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-shadow">
+    <div className="p-6">
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        
+        {/* Card */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
-            <h3 className="text-gray-500 text-sm font-medium">Total Events</h3>
-            <CalendarDaysIcon className="h-6 w-6 text-[#FFB300]" />
+            <h3 className="text-gray-500 text-xs">Total Revenue (last 6 months)</h3>
+            <div className="bg-[#FFF3CD] p-2 rounded-full">
+              <ChartBarIcon className="h-5 w-5 text-[#FFB300]" />
+            </div>
           </div>
-          <p className="text-3xl font-bold text-gray-800 mt-2">15</p>
-          <div className="w-full h-1 bg-gray-200 rounded-full mt-3">
-            <div className="h-1 bg-[#FFB300] rounded-full w-3/4"></div>
+
+          <p className="text-3xl font-bold text-gray-900 mt-2">MK10,000,000</p>
+          <p className="text-green-600 text-xs mt-1">+6% increase in revenue</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <h3 className="text-gray-500 text-xs">Total Events</h3>
+            <div className="bg-[#FFF3CD] p-2 rounded-full">
+              <CalendarDaysIcon className="h-5 w-5 text-[#FFB300]" />
+            </div>
+          </div>
+
+          <p className="text-3xl font-bold text-gray-900 mt-2">10</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <h3 className="text-gray-500 text-xs">Event Vendors</h3>
+            <div className="bg-[#FFF3CD] p-2 rounded-full">
+              <UsersIcon className="h-5 w-5 text-[#FFB300]" />
+            </div>
+          </div>
+
+          <p className="text-3xl font-bold text-gray-900 mt-2">210</p>
+          <p className="text-green-600 text-xs mt-1">+20% increase</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <h3 className="text-gray-500 text-xs">User Generated Content</h3>
+            <div className="bg-[#FFF3CD] p-2 rounded-full">
+              <TicketIcon className="h-5 w-5 text-[#FFB300]" />
+            </div>
+          </div>
+
+          <p className="text-3xl font-bold text-gray-900 mt-2">16.5K</p>
+        </div>
+
+      </div>
+
+      {/* Charts + Right Side Blocks */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+
+        {/* Ticket Sales Chart Placeholder */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-2">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Ticket Sales Overview</h2>
+          <div className="h-48 rounded-md bg-gray-50 flex items-center justify-center text-gray-400">
+            Chart Placeholder
+          </div>
+        </div>
+
+        {/* User Generated Content Chart */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">User Generated Content</h2>
+          <div className="h-48 rounded-md bg-gray-50 flex items-center justify-center text-gray-400">
+            Small Chart Placeholder
+          </div>
+        </div>
+
+      </div>
+
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Recent Transactions */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h2>
+          <div className="space-y-3">
+            {[1,2,3,4].map((i) => (
+              <div key={i} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                <div>
+                  <p className="font-medium">#003</p>
+                  <p className="text-xs text-gray-500">John Tadala</p>
+                </div>
+                <p className="font-semibold">MK200,000</p>
+                <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs">
+                  Success
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Upcoming Events */}
-        <div className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-500 text-sm font-medium">Upcoming Events</h3>
-            <CalendarDaysIcon className="h-6 w-6 text-[#FFB300]" />
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
+            <button className="text-sm text-blue-500">View All</button>
           </div>
-          <p className="text-3xl font-bold text-gray-800 mt-2">5</p>
-          <div className="w-full h-1 bg-gray-200 rounded-full mt-3">
-            <div className="h-1 bg-[#FFB300] rounded-full w-1/2"></div>
-          </div>
-        </div>
 
-        {/* Total Attendees */}
-        <div className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-500 text-sm font-medium">Total Attendees</h3>
-            <UsersIcon className="h-6 w-6 text-[#FFB300]" />
-          </div>
-          <p className="text-3xl font-bold text-gray-800 mt-2">1,234</p>
-          <div className="w-full h-1 bg-gray-200 rounded-full mt-3">
-            <div className="h-1 bg-[#FFB300] rounded-full w-3/4"></div>
-          </div>
-        </div>
-
-        {/* Ticket Sales */}
-        <div className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-500 text-sm font-medium">Ticket Sales</h3>
-            <TicketIcon className="h-6 w-6 text-[#FFB300]" />
-          </div>
-          <p className="text-3xl font-bold text-gray-800 mt-2">$12,450</p>
-          <div className="w-full h-1 bg-gray-200 rounded-full mt-3">
-            <div className="h-1 bg-[#FFB300] rounded-full w-2/3"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Detailed Panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upcoming Events Panel */}
-        <div className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-shadow">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center justify-between">
-            Upcoming Events
-            <CalendarDaysIcon className="h-6 w-6 text-[#FFB300]" />
-          </h2>
-          <p className="text-gray-600 mb-4">Your upcoming events will appear here.</p>
-          <ul className="space-y-3">
-            <li className="flex justify-between items-center bg-gray-50 p-3 rounded-md hover:bg-gray-100 transition">
-              <span>Summer Music Fest</span>
-              <span className="text-sm text-gray-500">Aug 25, 2025</span>
-            </li>
-            <li className="flex justify-between items-center bg-gray-50 p-3 rounded-md hover:bg-gray-100 transition">
-              <span>Food & Drinks Expo</span>
-              <span className="text-sm text-gray-500">Sep 02, 2025</span>
+          <ul className="space-y-4">
+            <li className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img src="/event.png" className="h-10 w-10 rounded-full" />
+                <span className="font-medium">Wanted Finale Grand Tour</span>
+              </div>
+              <span className="text-gray-500 text-sm">More Info</span>
             </li>
           </ul>
         </div>
 
-        {/* Recent Activity Panel */}
-        <div className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-shadow">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center justify-between">
-            Recent Activity
-            <ChartBarIcon className="h-6 w-6 text-[#FFB300]" />
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Recent ticket sales and registrations will appear here.
-          </p>
-          <ul className="space-y-3">
-            <li className="flex justify-between items-center bg-gray-50 p-3 rounded-md hover:bg-gray-100 transition">
-              <span>John Doe purchased 2 tickets</span>
-              <span className="text-sm text-gray-500">5m ago</span>
-            </li>
-            <li className="flex justify-between items-center bg-gray-50 p-3 rounded-md hover:bg-gray-100 transition">
-              <span>Jane Smith registered</span>
-              <span className="text-sm text-gray-500">12m ago</span>
-            </li>
-          </ul>
-        </div>
       </div>
+
     </div>
   );
 };
