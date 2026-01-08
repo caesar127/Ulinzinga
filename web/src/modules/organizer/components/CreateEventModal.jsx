@@ -1,269 +1,367 @@
 import React, { useState } from "react";
-import Modal from "@/shared/components/ui/Modal";
 import Button from "@/shared/components/ui/Button";
 import Input from "@/shared/components/ui/Input";
+import ImagePicker from "@/shared/components/ui/ImagePicker";
+import MapPicker from "@/shared/components/ui/MapPicker";
 import { useCreateOrganizerEventMutation } from "@/features/organizer-events/organizerEventsApiSlice";
+import { useDispatch } from "react-redux";
+import { addEvent } from "@/features/organizer-events/organizerEventsSlice";
 import { handleSuccessToast2, handleErrorToast2 } from "../../../utils/toasts";
+import logo from "@/assets/logo/UlinzingaUlinzinga-2.png";
+
+const steps = ["Basic Info", "Venue & Media", "Settings", "Interests"];
 
 const CreateEventModal = ({ isOpen, onClose, onSuccess }) => {
+  if (!isOpen) return null;
+
+  const dispatch = useDispatch();
   const [createEvent, { isLoading }] = useCreateOrganizerEventMutation();
+
+  const [step, setStep] = useState(0);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    venue_name: "",
+    venue_address: "",
+    location: "", // Will be replaced with coordinates object
     start_date: "",
     end_date: "",
+    start_time: "",
+    end_time: "",
+    logo: null, // File object
+    banner: null, // File object
+    interest: [],
+    capacity: "",
     balance_ref: "",
+    terms_text: "",
+    isVisible: false,
   });
 
-  const [bannerFile, setBannerFile] = useState(null);
-  const [bannerPreview, setBannerPreview] = useState(null);
-  const [errors, setErrors] = useState({});
-
-  const handleInputChange = ({ target: { name, value } }) => {
+  const handleInputChange = ({ target }) => {
+    const { name, value } = target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setErrors((prev) => ({
-        ...prev,
-        banner: "Please select a valid image file",
-      }));
-      return;
+  const handleLocationChange = (locationData) => {
+    setFormData((prev) => ({ ...prev, location: locationData }));
+    if (errors.location) {
+      setErrors((prev) => ({ ...prev, location: null }));
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((prev) => ({
-        ...prev,
-        banner: "File size must be less than 5MB",
-      }));
-      return;
-    }
-
-    setBannerFile(file);
-    setBannerPreview(URL.createObjectURL(file));
-    setErrors((prev) => ({ ...prev, banner: null }));
   };
 
-  const validateForm = () => {
-    const newErrors = {};
+  const handleLogoChange = (file) => {
+    setFormData((prev) => ({ ...prev, logo: file }));
+  };
 
-    if (!formData.title.trim()) newErrors.title = "Event title is required";
-    if (!formData.description.trim())
-      newErrors.description = "Event description is required";
-    if (!formData.start_date) newErrors.start_date = "Start date is required";
-    if (!formData.end_date) newErrors.end_date = "End date is required";
-    if (!formData.balance_ref.trim())
-      newErrors.balance_ref = "Balance reference is required";
+  const handleBannerChange = (file) => {
+    setFormData((prev) => ({ ...prev, banner: file }));
+  };
 
-    if (
-      formData.start_date &&
-      formData.end_date &&
-      new Date(formData.start_date) >= new Date(formData.end_date)
-    ) {
-      newErrors.end_date = "End date must be after start date";
+  const validateStep = () => {
+    console.log("Validating step:", step);
+    console.log("FormData:", formData);
+    const e = {};
+
+    if (step === 0) {
+      if (!formData.title.trim()) e.title = "Required";
+      if (!formData.description.trim()) e.description = "Required";
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (step === 1) {
+      if (!formData.venue_name.trim()) e.venue_name = "Required";
+      if (!formData.location) e.location = "Required";
+      if (!formData.start_date) e.start_date = "Required";
+      if (
+        formData.start_date &&
+        formData.end_date &&
+        new Date(formData.start_date) >= new Date(formData.end_date)
+      ) {
+        e.end_date = "End date must be after start date";
+      }
+    }
+
+    if (step === 2) {
+      if (!formData.balance_ref.trim()) e.balance_ref = "Required";
+    }
+
+    console.log("Validation errors:", e);
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      description: "",
-      start_date: "",
-      end_date: "",
-      balance_ref: "",
-    });
-    setBannerFile(null);
-    setBannerPreview(null);
-    setErrors({});
+  const handleNext = () => {
+    const isValid = validateStep();
+    console.log("handleNext: isValid =", isValid);
+    if (isValid) {
+      setStep((s) => s + 1);
+    }
   };
+  const handlePrev = () => setStep((s) => s - 1);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateStep()) return;
 
     try {
-      const submitData = { ...formData, banner: bannerFile };
+      // Prepare data for submission
+      const submitData = {
+        ...formData,
+        capacity: formData.capacity ? parseInt(formData.capacity) : null,
+        // Convert location object to string for backend compatibility
+        location: formData.location
+          ? typeof formData.location === "string"
+            ? formData.location
+            : `${
+                formData.location.address ||
+                `${formData.location.lat}, ${formData.location.lng}`
+              }`
+          : "",
+      };
+
       const res = await createEvent(submitData).unwrap();
 
+      dispatch(addEvent(res.data));
       handleSuccessToast2("Event created successfully!");
-      resetForm();
       onClose();
-      if (onSuccess) onSuccess(res?.data);
-    } catch (error) {
-      const errorMessage = error?.data?.message || "Failed to create event. Please try again.";
-      handleErrorToast2(errorMessage);
-      setErrors({
-        submit: errorMessage,
-      });
+      onSuccess?.(res.data);
+    } catch (err) {
+      handleErrorToast2(err?.data?.message || "Failed to create event");
     }
   };
 
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
-
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="Create New Event"
-      size="md"
-    >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {errors.submit && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-red-600 text-sm">{errors.submit}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-lg rounded-2xl bg-white shadow-xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mx-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="logo" className="w-12" />
+            <div>
+              <p className="text-xs text-gray-500">Create</p>
+              <h3 className="text-lg font-semibold">
+                New <span className="text-[#FFB300]">Event</span>
+              </h3>
+            </div>
           </div>
-        )}
 
-        <Input
-          label="Event Title"
-          name="title"
-          value={formData.title}
-          onChange={handleInputChange}
-          placeholder="Enter event title"
-          required
-          error={errors.title}
-        />
-
-        <Input
-          label="Description"
-          name="description"
-          value={formData.description}
-          onChange={handleInputChange}
-          placeholder="Enter event description"
-          required
-          error={errors.description}
-          multiline
-          rows={4}
-        />
-
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Start Date"
-            name="start_date"
-            type="date"
-            value={formData.start_date}
-            onChange={handleInputChange}
-            required
-            error={errors.start_date}
-          />
-
-          <Input
-            label="End Date"
-            name="end_date"
-            type="date"
-            value={formData.end_date}
-            onChange={handleInputChange}
-            required
-            error={errors.end_date}
-          />
+          <button
+            onClick={onClose}
+            className="text-2xl text-gray-400 hover:text-gray-600"
+          >
+            ×
+          </button>
         </div>
-
-        <Input
-          label="Balance Reference"
-          name="balance_ref"
-          value={formData.balance_ref}
-          onChange={handleInputChange}
-          placeholder="Enter balance reference"
-          required
-          error={errors.balance_ref}
-          help="Payment balance reference for the event"
-        />
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Event Banner
-          </label>
-
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-            {bannerPreview ? (
-              <div className="space-y-3">
-                <img
-                  src={bannerPreview}
-                  alt="Banner Preview"
-                  className="mx-auto max-h-48 rounded-lg object-cover"
-                />
-                <p className="text-sm text-gray-600">{bannerFile?.name}</p>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBannerFile(null);
-                    setBannerPreview(null);
-                  }}
-                  className="text-red-600 hover:text-red-800 text-sm"
-                >
-                  Remove
-                </button>
+        
+        <div className="px-6 pt-4">
+          <div className="flex justify-between bg-gray-100 rounded-full p-2">
+            {steps.map((label, i) => (
+              <div
+                key={label}
+                className={`flex-1 text-center text-xs p-2 rounded-full transition ${
+                  i === step ? "bg-black text-white" : "text-gray-500"
+                }`}
+              >
+                {label}
               </div>
-            ) : (
-              <div>
-                <input
-                  type="file"
+            ))}
+          </div>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="px-6 py-6 ">
+          {step === 0 && (
+            <>
+              <Input
+                label="Event Title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                error={errors.title}
+              />
+
+              <Input
+                label="Description"
+                name="description"
+                multiline
+                value={formData.description}
+                onChange={handleInputChange}
+                error={errors.description}
+              />
+
+              <div className="flex gap-4">
+                <Input
+                  label="Start Date"
+                  name="start_date"
+                  type="date"
+                  className="w-full"
+                  value={formData.start_date}
+                  onChange={handleInputChange}
+                  error={errors.start_date}
+                />
+
+                <Input
+                  label="End Date"
+                  name="end_date"
+                  type="date"
+                  className="w-full"
+                  value={formData.end_date}
+                  onChange={handleInputChange}
+                  error={errors.end_date}
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <Input
+                  label="Start Time"
+                  name="start_time"
+                  type="time"
+                  className="w-full"
+                  value={formData.start_time}
+                  onChange={handleInputChange}
+                />
+
+                <Input
+                  label="End Time"
+                  name="end_time"
+                  type="time"
+                  className="w-full"
+                  value={formData.end_time}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </>
+          )}
+
+          {step === 1 && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+                <ImagePicker
+                  label="Event Logo"
+                  value={formData.logo}
+                  onChange={handleLogoChange}
                   accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  id="banner-upload"
+                  maxSize={2 * 1024 * 1024}
                 />
-                <label
-                  htmlFor="banner-upload"
-                  className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200"
-                >
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Upload Banner Image
-                </label>
-                <p className="text-xs text-gray-500 mt-2">
-                  PNG, JPG, GIF up to 5MB
-                </p>
+
+                <ImagePicker
+                  label="Event Banner"
+                  value={formData.banner}
+                  onChange={handleBannerChange}
+                  accept="image/*"
+                  maxSize={5 * 1024 * 1024}
+                />
               </div>
+
+              <div className="flex gap-4">
+                <Input
+                  label="Venue Name"
+                  name="venue_name"
+                  className="w-full"
+                  value={formData.venue_name}
+                  onChange={handleInputChange}
+                  error={errors.venue_name}
+                />
+
+                <Input
+                  label="Venue Address"
+                  name="venue_address"
+                  className="w-full"
+                  value={formData.venue_address}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <MapPicker
+                label="Event Location"
+                value={formData.location}
+                onChange={handleLocationChange}
+                error={errors.location}
+                height="200px"
+              />
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <Input
+                label="Balance Reference"
+                name="balance_ref"
+                value={formData.balance_ref}
+                onChange={handleInputChange}
+                error={errors.balance_ref}
+              />
+
+              <Input
+                label="Terms & Conditions"
+                name="terms_text"
+                multiline
+                value={formData.terms_text}
+                onChange={handleInputChange}
+              />
+
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={formData.isVisible}
+                  onChange={(e) =>
+                    setFormData((p) => ({
+                      ...p,
+                      isVisible: e.target.checked,
+                    }))
+                  }
+                />
+                Make event public
+              </label>
+            </>
+          )}
+
+          {step === 3 && (
+            <Input
+              label="Interests"
+              placeholder="music, tech, business"
+              value={formData.interest.join(", ")}
+              onChange={(e) =>
+                setFormData((p) => ({
+                  ...p,
+                  interest: e.target.value
+                    .split(",")
+                    .map((i) => i.trim())
+                    .filter(Boolean),
+                }))
+              }
+            />
+          )}
+
+          {/* Actions */}
+          <div className="flex justify-between pt-4 sticky bottom-0 bg-white border-t border-gray-200 -mx-6 px-6 py-4">
+            {step > 0 ? (
+              <Button type="button" variant="ghost" onClick={handlePrev}>
+                Back
+              </Button>
+            ) : (
+              <div />
+            )}
+
+            {step < steps.length - 1 ? (
+              <Button type="button" onClick={handleNext}>
+                Next
+              </Button>
+            ) : (
+              <Button type="submit" loading={isLoading}>
+                Create Event
+              </Button>
             )}
           </div>
-
-          {errors.banner && (
-            <p className="text-red-500 text-sm mt-1">{errors.banner}</p>
-          )}
-        </div>
-
-        <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleClose}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" disabled={isLoading}>
-            {isLoading ? "Creating..." : "Create Event"}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+        </form>
+      </div>
+    </div>
   );
 };
 
