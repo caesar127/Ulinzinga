@@ -2,6 +2,32 @@ import User from "./users.model.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { PAGINATION } from "../../core/utils/constants.js";
+import { request, FormData, File } from "undici";
+
+const uploadToStorage = async (fileBuffer, filename, mimetype) => {
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 15);
+  const uniquePath = `profile/${timestamp}-${randomString}-${filename}`;
+
+  const formData = new FormData();
+  formData.append("file", new File([fileBuffer], filename, { type: mimetype }));
+  formData.append("projectName", "ulinzinga");
+  formData.append("path", uniquePath);
+
+  const { body } = await request(`${process.env.STORAGE_URL}/storage/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
+    },
+    body: formData,
+  });
+
+  const uploadResult = await body.json();
+
+  if (!uploadResult.success) throw new Error("File upload failed");
+
+  return uploadResult.data;
+};
 
 export const createUserService = async (userData) => {
   const exists = await User.findOne({
@@ -77,6 +103,20 @@ export const updateUserProfileService = async (userId, updateData) => {
   const user = await User.findByIdAndUpdate(
     userId,
     { $set: updateData },
+    { new: true, runValidators: true }
+  ).select("-password");
+
+  if (!user) throw new Error("User not found");
+  return user;
+};
+
+export const updateUserPictureService = async (userId, fileBuffer, filename, mimetype) => {
+  // Upload to external storage
+  const uploadData = await uploadToStorage(fileBuffer, filename, mimetype);
+  
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { "profile.picture": uploadData.url },
     { new: true, runValidators: true }
   ).select("-password");
 
