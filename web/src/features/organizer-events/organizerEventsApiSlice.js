@@ -1,23 +1,41 @@
 import { apiSlice } from "@/api/apiSlice";
 
-const ORGANIZER_EVENTS_URL = "/api/organizer";
+const ORGANIZER_EVENTS_URL = "/api/organizer/events";
 
 export const organizerEventsApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getOrganizerEvents: builder.query({
-      query: () => ({
-        url: ORGANIZER_EVENTS_URL,
-        method: "GET",
-      }),
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams(params);
+        return {
+          url: `${ORGANIZER_EVENTS_URL}?${searchParams.toString()}`,
+          method: "GET",
+        };
+      },
       providesTags: ["OrganizerEvent"],
+      transformResponse: (response) => {
+        return {
+          events: response.data || [],
+          pagination: response.pagination || {
+            currentPage: 1,
+            totalPages: 1,
+            totalCount: 0,
+            limit: 20,
+            hasNextPage: false,
+            hasPrevPage: false,
+            sortBy: 'created_at',
+            sortOrder: 'desc'
+          }
+        };
+      },
     }),
 
     getOrganizerEventById: builder.query({
-      query: (id) => ({
-        url: `${ORGANIZER_EVENTS_URL}/${id}`,
+      query: ({ id, merchantId }) => ({
+        url: `${ORGANIZER_EVENTS_URL}/${id}/${merchantId}`,
         method: "GET",
       }),
-      providesTags: (result, error, id) => [{ type: "OrganizerEvent", id }],
+      providesTags: (result, error, { id }) => [{ type: "OrganizerEvent", id }],
     }),
 
     createOrganizerEvent: builder.mutation({
