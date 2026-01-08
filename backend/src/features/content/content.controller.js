@@ -9,6 +9,7 @@ import {
   rejectContentItem,
   deleteContentItemWithStorage,
   verifyUserTicketForEvent,
+  fetchUserContentService,
 } from "./content.service.js";
 
 export const uploadContent = async (req, res) => {
@@ -42,7 +43,7 @@ export const uploadContent = async (req, res) => {
       resolvedEventId = event._id;
     }
 
-    const medias = [];
+    const media = [];
     for (const file of req.files) {
       const uploadData = await uploadToStorage(
         file.buffer,
@@ -52,7 +53,7 @@ export const uploadContent = async (req, res) => {
 
       const type = uploadData.mimetype.startsWith("video") ? "video" : "image";
 
-      medias.push({
+      media.push({
         type,
         url: uploadData.url,
         thumbnailUrl: null, 
@@ -66,7 +67,7 @@ export const uploadContent = async (req, res) => {
     const contentItem = await createContentItem({
       userId: req.user.userId || req.user.id,
       eventId: resolvedEventId,
-      medias,
+      media,
       caption,
       visibilityScope,
       privacy,
@@ -93,44 +94,22 @@ export const fetchEventContent = async (req, res) => {
 };
 
 export const fetchUserContent = async (req, res) => {
-  const { userId } = req.params;
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
-  const viewerId = req.user?.id;
-  const ownerId = userId;
+  try {
+    const { userId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const viewerId = req.user?.id || req.user?.userId;
 
-  const query = {
-    user: ownerId,
-    visibilityScope: { $in: ["profile", "event"] },
-  };
+    const result = await fetchUserContentService(userId, viewerId, page, limit);
 
-  if (!viewerId || viewerId.toString() !== ownerId.toString()) {
-    query.privacy = "public";
-    query.approvalStatus = "approved";
+    res.json({
+      success: true,
+      data: result.content,
+      pagination: result.pagination,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
-
-  const [content, totalCount] = await Promise.all([
-    Content.find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit),
-    Content.countDocuments(query),
-  ]);
-
-  const totalPages = Math.ceil(totalCount / limit);
-
-  res.json({
-    success: true,
-    data: content,
-    pagination: {
-      currentPage: page,
-      totalPages,
-      totalCount,
-      limit,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-    },
-  });
 };
 
 export const fetchVault = async (req, res) => {
