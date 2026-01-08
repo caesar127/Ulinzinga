@@ -42,6 +42,46 @@ export const walletApiSlice = apiSlice.injectEndpoints({
       providesTags: ["Wallet"],
     }),
 
+    // Check savings eligibility (NEW)
+    getSavingsEligibility: builder.query({
+      query: () => `${WALLET_URL}/savings/eligibility`,
+      providesTags: ["Wallet"],
+    }),
+
+    // Get available events for savings goals (NEW)
+    getAvailableEvents: builder.query({
+      query: () => `${WALLET_URL}/savings/available-events`,
+      providesTags: ["Events"],
+    }),
+
+    // Get available organizers for savings goals (NEW)
+    getAvailableOrganizers: builder.query({
+      query: () => `${WALLET_URL}/savings/available-organizers`,
+      providesTags: ["Organizers"],
+    }),
+
+    // Get events by specific organizer (NEW)
+    getEventsByOrganizer: builder.query({
+      query: (organizerId) => `${WALLET_URL}/savings/organizer/${organizerId}/events`,
+      providesTags: ["Events"],
+    }),
+
+    // Allocate funds from organizer savings to event (NEW)
+    allocateFundsToEvent: builder.mutation({
+      query: ({ goalId, ...allocationData }) => ({
+        url: `${WALLET_URL}/savings/goals/${goalId}/allocate`,
+        method: "POST",
+        body: allocationData,
+      }),
+      invalidatesTags: ["Savings", "Wallet"],
+    }),
+
+    // Get available allocation amount for a goal (NEW)
+    getAvailableAllocationAmount: builder.query({
+      query: (goalId) => `${WALLET_URL}/savings/goals/${goalId}/available-allocation`,
+      providesTags: ["Savings"],
+    }),
+
     // Transfer money to organizer/vendor
     transferMoney: builder.mutation({
       query: ({ toUserId, toAccountType, amount, description, eventId }) => ({
@@ -121,6 +161,12 @@ export const {
   useSpendFundsFromWalletMutation,
   useGetWalletTransactionsQuery,
   useGetWalletSummaryQuery,
+  useGetSavingsEligibilityQuery,
+  useGetAvailableEventsQuery,
+  useGetAvailableOrganizersQuery,
+  useGetEventsByOrganizerQuery,
+  useAllocateFundsToEventMutation,
+  useGetAvailableAllocationAmountQuery,
   useTransferMoneyMutation,
   useCreateSavingsGoalMutation,
   useGetSavingsGoalsQuery,
