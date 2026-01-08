@@ -45,7 +45,7 @@ function Navbar() {
               Marketplace
             </Link>
             <Link to="/gallery" className="px-3 py-2">
-              Gallery
+              Moments
             </Link>
 
             {isAuthenticated ? (
@@ -108,7 +108,7 @@ function Navbar() {
               onClick={() => setMobileOpen(false)}
               className="px-3 py-2 text-sm border-b"
             >
-              Gallery
+              Moments
             </Link>
 
             {/* User Actions */}
