@@ -45,7 +45,7 @@ export const verifyUserTicketForEvent = async (userEmail, eventIdentifier) => {
 export const createContentItem = async ({
   userId,
   eventId = null,
-  medias,
+  media,
   caption = null,
   visibilityScope,
   privacy = "public",
@@ -53,7 +53,7 @@ export const createContentItem = async ({
   return Content.create({
     user: userId,
     event: eventId,
-    medias,
+    media,
     caption,
     visibilityScope,
     privacy,
@@ -180,7 +180,7 @@ export const deleteContentItemWithStorage = async (
   if (!isAdmin && item.user.toString() !== userId.toString())
     throw new Error("Unauthorized");
 
-  for (const media of item.medias) {
+  for (const media of item.media) {
     if (media.storage?.projectName && media.storage?.path) {
       const encodedPath = encodeURIComponent(media.storage.path);
       await request(
@@ -197,4 +197,39 @@ export const deleteContentItemWithStorage = async (
 
   await item.deleteOne();
   return true;
+};
+
+export const fetchUserContentService = async (userId, viewerId, page = 1, limit = 20) => {
+  const ownerId = userId;
+
+  const query = {
+    user: ownerId,
+    visibilityScope: { $in: ["profile", "event"] },
+  };
+
+  if (!viewerId || viewerId.toString() !== ownerId.toString()) {
+    query.privacy = "public";
+  }
+
+  const [content, totalCount] = await Promise.all([
+    Content.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit),
+    Content.countDocuments(query),
+  ]);
+
+  const totalPages = Math.ceil(totalCount / limit);
+
+  return {
+    content,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalCount,
+      limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    },
+  };
 };
