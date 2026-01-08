@@ -2,9 +2,9 @@ import { Link, useLocation } from "react-router-dom";
 import {
   Squares2X2Icon,
   CalendarDaysIcon,
-  PlusCircleIcon,
   UsersIcon,
-  ChartBarIcon,
+  PhotoIcon,
+  BuildingStorefrontIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
 
@@ -17,45 +17,48 @@ const OrganizerSidebar = () => {
 
   const menuItems = [
     { path: "/organizer/dashboard", label: "Dashboard", icon: Squares2X2Icon },
-    { path: "/organizer/events", label: "My Events", icon: CalendarDaysIcon },
-    {
-      path: "/organizer/events/create",
-      label: "Create Event",
-      icon: PlusCircleIcon,
-    },
+    { path: "/organizer/events", label: "Events", icon: CalendarDaysIcon },
     { path: "/organizer/attendees", label: "Attendees", icon: UsersIcon },
-    { path: "/organizer/analytics", label: "Analytics", icon: ChartBarIcon },
+    { path: "/organizer/vendors", label: "Vendors", icon: BuildingStorefrontIcon },
+    { path: "/organizer/gallery", label: "Gallery", icon: PhotoIcon },
+    { path: "/organizer/transactions", label: "Transactions", icon: CalendarDaysIcon },
     { path: "/organizer/profile", label: "Profile", icon: UserCircleIcon },
   ];
 
   return (
-    <aside className="w-64 bg-slate-50 h-screen flex flex-col">
+    <aside className="w-64 bg-black h-screen flex flex-col">
       <div className="p-4 flex items-center space-x-3">
         <img src={logo} alt="Ulinzinga Logo" className="h-12" />
-        <h1 className="text-xl font-semibold truncate">{business?.name}</h1>
+        <h1 className="text-xl font-[500] text-white truncate">
+          {business?.name}
+        </h1>
       </div>
 
-      <nav className="mt-2 flex-1">
+      <h1 className="text-[#8B909A] mx-6 mt-4 mb-2 text-xs">MAIN MENU</h1>
+
+      <nav className="flex-1 space-y-1">
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname.startsWith(item.path);
           const Icon = item.icon;
 
           return (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center px-6 py-2 transition-all rounded-lg mx-2 ${
-                isActive
-                  ? "bg-black/10 text-gray-700 font-[500]"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className={`flex items-center px-4 py-2 text-sm font-[300] transition-all
+                ${
+                  isActive
+                    ? "border-l-4 border-[#FFB300] text-white bg-[#1A1A1A]"
+                    : "text-[#809FB8] hover:text-white hover:bg-[#1A1A1A]"
+                }
+              `}
             >
               <Icon
-                className={`h-6 w-6 mr-3 transition-colors ${
-                  isActive ? "text-[#FFB300]" : "text-gray-500"
+                className={`h-5 w-5 mr-3 ${
+                  isActive ? "text-white" : "text-[#809FB8]"
                 }`}
               />
-              <span>{item.label}</span>
+              {item.label}
             </Link>
           );
         })}

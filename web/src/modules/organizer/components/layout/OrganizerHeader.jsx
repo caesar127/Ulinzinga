@@ -5,7 +5,7 @@ const OrganizerHeader = () => {
   const { user } = useSelector((state) => state.auth);
 
   return (
-    <header className="bg-slate-50">
+    <header className="">
       <div className="flex items-center justify-between px-3 py-4 justify-end">
         
         {/* <div>
