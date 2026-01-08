@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap");
+@import "leaflet/dist/leaflet.css";
 
 @import "tailwindcss";
 
@@ -45,4 +46,31 @@ h1 {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.clip-skew {
+  clip-path: polygon(0 0, 100% 5%, 100% 95%, 0 100%);
+}
+
+.ticket-edge-zigzag {
+  clip-path: polygon(
+    0 0, 100% 0, 100% 85%, 95% 90%, 90% 85%, 85% 90%,
+    80% 85%, 75% 90%, 70% 85%, 65% 90%, 60% 85%, 0 85%
+  );
+}
+
+.dotted-edge {
+  position: relative;
+}
+
+.dotted-edge::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background-image: radial-gradient(circle, #d1d5db 1px, transparent 1.5px);
+  background-size: 6px 6px;
+  background-repeat: repeat-y;
 }
