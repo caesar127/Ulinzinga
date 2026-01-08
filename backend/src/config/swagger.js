@@ -176,6 +176,13 @@ const openApiSpec = {
           _id: { type: "string" },
           name: { type: "string" },
           email: { type: "string", format: "email" },
+          profile: {
+            type: "object",
+            properties: {
+              picture: { type: "string", description: "Profile picture URL" },
+              bio: { type: "string" },
+            },
+          },
           interests: {
             type: "array",
             items: { type: "string" },
@@ -202,6 +209,7 @@ const openApiSpec = {
     { name: "Organizer Events", description: "Organizer event management" },
     // { name: "Users", description: "User management" },
     { name: "User Events", description: "User event interactions" },
+    { name: "Users", description: "User management" },
     { name: "Content", description: "Content management" },
     { name: "Wallet", description: "Wallet operations" },
     { name: "Savings Goals", description: "Savings goals management" },
@@ -471,6 +479,37 @@ const openApiSpec = {
     },
 
     // ==================== USERS ENDPOINTS ====================
+    // ==================== USERS ENDPOINTS ====================
+    "/api/user/users/picture": {
+      post: {
+        summary: "Upload user profile picture",
+        tags: ["Users"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                properties: {
+                  picture: {
+                    type: "string",
+                    format: "binary",
+                    description: "Profile picture file (max 5MB, images only)",
+                  },
+                },
+                required: ["picture"],
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Profile picture uploaded successfully" },
+          400: { description: "No file uploaded or invalid file type" },
+          401: { description: "Unauthorized" },
+        },
+      },
+    },
     // "/api/user/users": {
     //   post: {
     //     summary: "Create a new user",
