@@ -46,7 +46,6 @@ const connectionsSlice = createSlice({
       .addMatcher(
         connectionsApiSlice.endpoints.getSuggestedConnections.matchFulfilled,
         (state, action) => {
-            console.log(action.payload);
           state.suggestedConnections =
             action.payload?.data || action.payload.suggestions || [];
         }
