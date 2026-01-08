@@ -14,6 +14,14 @@ export const usersApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
+    uploadProfilePicture: builder.mutation({
+      query: (formData) => ({
+        url: `${USER_URL}/picture`,
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["User"],
+    }),
     updateUserInterests: builder.mutation({
       query: ({ userId, interests }) => ({
         url: `${USER_URL}/${userId}/interests`,
@@ -36,6 +44,7 @@ export const usersApiSlice = apiSlice.injectEndpoints({
 export const {
   useGetUserByIdQuery,
   useUpdateUserProfileMutation,
+  useUploadProfilePictureMutation,
   useUpdateUserInterestsMutation,
   useGetCurrentUserProfileQuery,
 } = usersApiSlice;
