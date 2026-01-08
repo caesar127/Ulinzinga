@@ -26,7 +26,7 @@ const ContentSchema = new mongoose.Schema(
       index: true,
     },
 
-    medias: [{
+    media: [{
       type: {
         type: String,
         enum: ["image", "video"],
