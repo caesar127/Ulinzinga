@@ -5,6 +5,7 @@ import {
   updateUserService,
   deleteUserService,
   updateUserProfileService,
+  updateUserPictureService,
   updateUserInterestsService,
 } from "./users.service.js";
 
@@ -59,6 +60,27 @@ export const updateUserProfile = async (req, res) => {
   try {
     const user = await updateUserProfileService(req.params.id, req.body);
     res.json({ message: "Profile updated successfully", user });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const updateUserPicture = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+    
+    // Use user ID from token instead of path parameter
+    const userId = req.user.id || req.user.userId;
+    
+    const user = await updateUserPictureService(
+      userId,
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype
+    );
+    res.json({ message: "Profile picture updated successfully", user });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
