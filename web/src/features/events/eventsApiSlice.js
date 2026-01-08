@@ -13,6 +13,20 @@ export const eventsApiSlice = apiSlice.injectEndpoints({
         };
       },
       providesTags: ["Event"],
+      keepUnusedDataFor: 300,
+      transformResponse: (response) => ({
+        events: response?.data || [],
+        pagination: response?.pagination || {
+          currentPage: 1,
+          totalPages: 1,
+          totalCount: 0,
+          limit: 20,
+          hasNextPage: false,
+          hasPrevPage: false,
+          sortBy: "start_date",
+          sortOrder: "desc",
+        },
+      }),
     }),
 
     getEventById: builder.query({
@@ -20,7 +34,9 @@ export const eventsApiSlice = apiSlice.injectEndpoints({
         url: `${EVENT_URL}/${id}`,
         method: "GET",
       }),
-      providesTags: (result, error, id) => [{ type: "Event", id }],
+      providesTags: (_, __, id) => [{ type: "Event", id }],
+      keepUnusedDataFor: 600,
+      transformResponse: (response) => response?.data || response,
     }),
 
     purchaseTicket: builder.mutation({
@@ -28,6 +44,31 @@ export const eventsApiSlice = apiSlice.injectEndpoints({
         url: `${EVENT_URL}/${data.eventSlug}/purchase`,
         method: "POST",
         body: data,
+      }),
+      invalidatesTags: ["Event"],
+    }),
+
+    giftTicket: builder.mutation({
+      query: (data) => ({
+        url: `${EVENT_URL}/${data.eventSlug}/purchase`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Event"],
+    }),
+
+    syncEvents: builder.mutation({
+      query: () => ({
+        url: `${EVENT_URL}/sync`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Event"],
+    }),
+
+    cleanupOrphanedEvents: builder.mutation({
+      query: () => ({
+        url: `${EVENT_URL}/cleanup-orphaned`,
+        method: "POST",
       }),
       invalidatesTags: ["Event"],
     }),
@@ -39,4 +80,7 @@ export const {
   useLazyGetEventsQuery,
   useGetEventByIdQuery,
   usePurchaseTicketMutation,
+  useGiftTicketMutation,
+  useSyncEventsMutation,
+  useCleanupOrphanedEventsMutation,
 } = eventsApiSlice;
