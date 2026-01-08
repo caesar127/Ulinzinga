@@ -10,6 +10,7 @@ import walletReducer from "./features/wallet/walletSlice";
 import adminEventsReducer from "./features/admin-events/adminEventsSlice";
 import vendorEventsReducer from "./features/vendor-events/vendorEventsSlice";
 import stallsReducer from "./features/stalls/stallsSlice";
+import contentReducer from "./features/content/contentSlice";
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ export const store = configureStore({
     adminEvents: adminEventsReducer,
     vendorEvents: vendorEventsReducer,
     stalls: stallsReducer,
+    content: contentReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(apiSlice.middleware),
