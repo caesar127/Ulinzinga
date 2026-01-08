@@ -80,10 +80,11 @@ export const createEvent = async (eventData) => {
         },
         { headers: buildHeaders(eventData.organizerId) }
       );
-
+      console.log(response);
       return response.data;
     }
   } catch (error) {
+    console.error("Create Event Error:", error.response?.data || error.message);
     throw new Error(error.response?.data?.message || error.message);
   }
 };
@@ -120,7 +121,7 @@ export const getEvent = async (eventId, merchantId) => {
         Authorization: `Bearer ${merchantId}`,
       },
     };
-console.log("options", options);
+    console.log("options", options);
     const { data } = await axios.request(options);
     console.log("data", data);
     return data;
