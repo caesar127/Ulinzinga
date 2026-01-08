@@ -26,6 +26,7 @@ import {
   useGetEventByIdQuery,
   useGiftTicketMutation,
 } from "../features/events/eventsApiSlice";
+import { useGetUserTicketsQuery } from "../features/user-events/userEventsApiSlice";
 
 // Component imports
 import ConnectionsSidebar from "../components/profile/ConnectionsSidebar";
@@ -35,7 +36,7 @@ import {
   ProfileStats,
   ProfileTabs,
 } from "../components/profile/ProfileHeader";
-import { PostsTab, EventsTab } from "../components/profile/ProfileContent";
+import { ContentTab, EventsTab } from "../components/profile/ProfileContent";
 import AddMoneyModal from "../components/profile/AddMoneyModal";
 import AddToSavingsModal from "../components/profile/AddToSavingsModal";
 import CreateGoalModal from "../components/profile/CreateGoalModal";
@@ -48,17 +49,17 @@ import {
 
 export default function ProfilePage() {
   const { user: authUser } = useSelector((state) => state.auth);
-  const { connections } = useSelector((state) => state.connections);
+  const { connections, pendingRequests, suggestedConnections } = useSelector(
+    (state) => state.connections
+  );
   const { events } = useSelector((state) => state.event);
-  
+
   const { data: userProfile, isLoading: isUserLoading } =
     useGetCurrentUserProfileQuery(authUser?._id);
   const { data: connectionsData, isLoading: isConnectionsLoading } =
     useGetUserConnectionsQuery();
-  const { data: suggestedUsers, isLoading: isSuggestedLoading } =
-    useGetSuggestedConnectionsQuery();
-  const { data: pendingRequests, isLoading: isPendingLoading } =
-    useGetPendingRequestsQuery();
+  const { isLoading: isSuggestedLoading } = useGetSuggestedConnectionsQuery();
+  const { isLoading: isPendingLoading } = useGetPendingRequestsQuery();
   const { data: sentRequestsData, isLoading: isSentLoading } =
     useGetSentRequestsQuery();
   const { data: wallet, isLoading: isWalletLoading } = useGetUserWalletQuery();
@@ -79,7 +80,7 @@ export default function ProfilePage() {
 
   // Local state
   const [connectionsTab, setConnectionsTab] = useState("connections");
-  const [profileTab, setProfileTab] = useState("posts");
+  const [profileTab, setProfileTab] = useState("content");
   const [isAddingMoney, setIsAddingMoney] = useState(false);
   const [isCreatingGoal, setIsCreatingGoal] = useState(false);
   const [isAddingToSavings, setIsAddingToSavings] = useState({});
@@ -96,7 +97,7 @@ export default function ProfilePage() {
     targetAmount: "",
     targetDate: "",
   });
-  
+
   const [showGiftTicketModal, setShowGiftTicketModal] = useState(false);
   const [giftTicketData, setGiftTicketData] = useState({
     selectedEvent: "",
@@ -108,7 +109,7 @@ export default function ProfilePage() {
     giftMessage: "",
   });
   const [isGiftingTicket, setIsGiftingTicket] = useState(false);
-  
+
   const { data: upcomingData } = useGetEventsQuery({
     per_page: "20",
     page: 1,
@@ -126,7 +127,7 @@ export default function ProfilePage() {
     selectedEventForTickets?.slug,
     { skip: !selectedEventForTickets?.slug }
   );
-  
+
   const balance =
     walletSummary?.regularBalance ||
     wallet?.regularBalance ||
@@ -134,7 +135,7 @@ export default function ProfilePage() {
     0;
   const totalSavings = walletSummary?.totalSavings || 0;
   const currentUser = userProfile || authUser;
-  
+
   const handleConnectUser = async (targetUserId) => {
     try {
       await sendConnectionRequest({ targetUserId }).unwrap();
@@ -349,7 +350,7 @@ export default function ProfilePage() {
       handleSuccessToast2(
         `Gift ticket purchase initiated for ${selectedConnection.name}`
       );
-      
+
       setGiftTicketData({
         selectedEvent: "",
         selectedTicketType: "",
@@ -425,7 +426,7 @@ export default function ProfilePage() {
           isSentLoading={isSentLoading}
           sentRequestsData={sentRequestsData}
           isSuggestedLoading={isSuggestedLoading}
-          suggestedConnections={suggestedUsers}
+          suggestedConnections={suggestedConnections}
           handleConnectUser={handleConnectUser}
           handleAcceptRequest={handleAcceptRequest}
           handleDeclineRequest={handleDeclineRequest}
@@ -441,13 +442,13 @@ export default function ProfilePage() {
           isGiftingTicket={isGiftingTicket}
         />
       </div>
-      
+
       <div className="col-span-5 overflow-y-auto custom-scrollbar px-6 pt-6 min-h-screen bg-[#F3F3F3]">
         <ProfileHeader
           currentUser={currentUser}
           onProfileUpdate={handleProfileUpdate}
         />
-        
+
         <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-[700] text-[#2D2D2D]">
@@ -460,15 +461,15 @@ export default function ProfilePage() {
 
           <ProfileStats currentUser={currentUser} connections={connections} />
         </div>
-        
+
         <ProfileTabs profileTab={profileTab} setProfileTab={setProfileTab} />
-        
+
         <div className="mt-6">
-          {profileTab === "posts" && <PostsTab />}
-          {profileTab === "events" && <EventsTab />}
+          {profileTab === "content" && <ContentTab currentUser={currentUser} />}
+          {profileTab === "events" && <EventsTab currentUser={currentUser} />}
         </div>
       </div>
-      
+
       <div className="col-span-3 overflow-y-auto custom-scrollbar px-4 pt-2 min-h-screen">
         <WalletSidebar
           balance={balance}
@@ -486,7 +487,7 @@ export default function ProfilePage() {
           handleGiftTicket={handleGiftTicket}
         />
       </div>
-      
+
       <AddMoneyModal
         isOpen={showAddMoneyModal}
         onClose={() => setShowAddMoneyModal(false)}
