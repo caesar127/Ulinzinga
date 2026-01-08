@@ -3,7 +3,7 @@ import multer from "multer";
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  const allowed = ["image/", "video/"];
+  const allowed = ["image/"];
   if (allowed.some((type) => file.mimetype.startsWith(type))) {
     cb(null, true);
   } else {
@@ -15,7 +15,7 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 20 * 1024 * 1024,
+    fileSize: 5 * 1024 * 1024, // 5MB limit for profile pictures
   },
 });
 
