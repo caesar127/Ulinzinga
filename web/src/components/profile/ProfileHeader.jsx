@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   UserGroupIcon,
@@ -7,9 +7,11 @@ import {
   HeartIcon,
   ArrowRightOnRectangleIcon,
   Cog6ToothIcon,
+  CameraIcon,
 } from "@heroicons/react/24/solid";
 import { useLogoutMutation } from "../../features/auth/authApiSlice";
 import { logout as logoutAction } from "../../features/auth/authSlice";
+import { useUploadProfilePictureMutation } from "../../features/users/usersApiSlice";
 import EditProfileModal from "./EditProfileModal";
 
 export function ProfileHeader({
@@ -22,9 +24,22 @@ export function ProfileHeader({
   const dispatch = useDispatch();
   const { user: authUser } = useSelector((state) => state.auth);
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
+  const [uploadProfilePicture, { isLoading: isUploading }] = useUploadProfilePictureMutation();
   
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Get the name for initial display
+  const userName = currentUser?.profile?.name || currentUser?.name || authUser?.name || "User";
+  const userInitials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const userPicture = currentUser?.profile?.picture || currentUser?.picture;
 
   const handleEditProfile = () => {
     setShowEditModal(true);
@@ -41,15 +56,80 @@ export function ProfileHeader({
     }
   };
 
+  const handleCameraClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("picture", file);
+      
+      await uploadProfilePicture(formData).unwrap();
+      
+      // Trigger profile update callback if provided
+      if (onProfileUpdate) {
+        onProfileUpdate();
+      }
+    } catch (error) {
+      console.error("Failed to upload profile picture:", error);
+      alert("Failed to upload profile picture. Please try again.");
+    }
+    
+    // Reset file input
+    e.target.value = "";
+  };
+
   return (
     <>
       <div className="mt-4 flex items-end justify-between relative">
         <div className="relative">
-          <img
-            src="https://blog.photofeeler.com/wp-content/uploads/2017/02/flattering-pose-profile-pics.jpeg"
-            className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-xl"
+          <div className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-xl overflow-hidden bg-gray-200 flex items-center justify-center">
+            {userPicture ? (
+              <img
+                src={userPicture}
+                alt={userName}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-4xl font-bold text-gray-500">
+                {userInitials}
+              </span>
+            )}
+          </div>
+          
+          {/* Camera Button */}
+          <button
+            onClick={handleCameraClick}
+            disabled={isUploading}
+            className="absolute bottom-0 right-0 w-10 h-10 bg-black text-white rounded-full border-4 border-white shadow-lg flex items-center justify-center hover:bg-[#1a1a1a] transition disabled:opacity-50"
+          >
+            {isUploading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <CameraIcon className="w-5 h-5" />
+            )}
+          </button>
+          
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
           />
-          <span className="absolute bottom-2 right-2 w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
+          
+          {/* <span className="absolute bottom-2 right-14 w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></span> */}
         </div>
 
         <div className="flex items-center gap-3">
@@ -149,7 +229,7 @@ export function ProfileStats({ currentUser, connections }) {
 export function ProfileTabs({ profileTab, setProfileTab }) {
   return (
     <div className="mt-8 flex text-sm font-[500] bg-white p-1 rounded-lg w-fit overflow-hidden shadow-sm">
-      {["posts", "events", "favourites"].map((tab) => {
+      {["content", "events", "favourites"].map((tab) => {
         const isActive = profileTab === tab;
         return (
           <motion.button
