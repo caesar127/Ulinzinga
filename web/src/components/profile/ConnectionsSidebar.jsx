@@ -25,6 +25,9 @@ export default function ConnectionsSidebar({
   handleAcceptRequest,
   handleDeclineRequest,
 }) {
+  const getInitials = (name) => {
+    return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
+  };
   return (
     <div className="min-h-screen bg-white pb-4">
       <h1 className="text-xl font-[600] text-[#2D2D2D] mb-4">Connections</h1>
@@ -68,13 +71,18 @@ export default function ConnectionsSidebar({
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <img
-                        src={
-                          connection.avatar ||
-                          "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
-                        }
-                        className="h-12 w-12 rounded-full object-cover shadow-sm"
-                      />
+                      {connection.avatar ? (
+                        <img
+                          src={connection.avatar}
+                          className="h-12 w-12 rounded-full object-cover shadow-sm"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center shadow-sm">
+                          <span className="text-sm font-semibold text-gray-600">
+                            {getInitials(connection.name)}
+                          </span>
+                        </div>
+                      )}
                       <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
                     </div>
                     <div>
@@ -124,13 +132,18 @@ export default function ConnectionsSidebar({
                       >
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <div className="relative">
-                            <img
-                              src={
-                                request.user?.avatar ||
-                                "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg"
-                              }
-                              className="h-12 w-12 rounded-full object-cover shadow"
-                            />
+                            {request.user?.avatar ? (
+                              <img
+                                src={request.user.avatar}
+                                className="h-12 w-12 rounded-full object-cover shadow"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center shadow">
+                                <span className="text-sm font-semibold text-gray-600">
+                                  {getInitials(request.user?.name)}
+                                </span>
+                              </div>
+                            )}
                             <div className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 rounded-full flex items-center justify-center shadow">
                               <UserPlusIcon className="w-3 h-3 text-white" />
                             </div>
@@ -194,13 +207,18 @@ export default function ConnectionsSidebar({
                       >
                         <div className="flex items-center gap-4">
                           <div className="relative">
-                            <img
-                              src={
-                                request.connection?.avatar ||
-                                "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg"
-                              }
-                              className="h-12 w-12 rounded-full object-cover shadow"
-                            />
+                            {request.connection?.avatar ? (
+                              <img
+                                src={request.connection.avatar}
+                                className="h-12 w-12 rounded-full object-cover shadow"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center shadow">
+                                <span className="text-sm font-semibold text-gray-600">
+                                  {getInitials(request.connection?.name)}
+                                </span>
+                              </div>
+                            )}
                             <div className="absolute -bottom-1 -right-1 bg-yellow-500 w-5 h-5 rounded-full flex items-center justify-center shadow">
                               <HeartIcon className="w-3 h-3 text-white" />
                             </div>
@@ -259,13 +277,18 @@ export default function ConnectionsSidebar({
                       >
                         <div className="flex items-center gap-4">
                           <div className="relative">
-                            <img
-                              src={
-                                user.avatar ||
-                                "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg"
-                              }
-                              className="h-12 w-12 rounded-full object-cover shadow"
-                            />
+                            {user.avatar ? (
+                              <img
+                                src={user.avatar}
+                                className="h-12 w-12 rounded-full object-cover shadow"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center shadow">
+                                <span className="text-sm font-semibold text-gray-600">
+                                  {getInitials(user.name)}
+                                </span>
+                              </div>
+                            )}
                             <div className="absolute -bottom-1 -right-1 bg-[#FFB300] w-5 h-5 rounded-full flex items-center justify-center shadow">
                               <HeartIcon className="w-3 h-3 text-white" />
                             </div>
@@ -327,13 +350,18 @@ export default function ConnectionsSidebar({
                   >
                     <div className="relative w-fit mx-auto">
                       <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#FFB300] via-[#FFD95C] to-[#FFE9A7] p-[2px]" />
-                      <img
-                        src={
-                          user?.avatar ||
-                          `https://ui-avatars.com/api/?background=FFB300&color=fff&name=${user.name}`
-                        }
-                        className="h-20 w-20 rounded-full mx-auto object-cover relative z-10 border-4 border-white"
-                      />
+                      {user?.avatar ? (
+                        <img
+                          src={user.avatar}
+                          className="h-20 w-20 rounded-full mx-auto object-cover relative z-10 border-4 border-white"
+                        />
+                      ) : (
+                        <div className="h-20 w-20 rounded-full bg-gray-300 flex items-center justify-center relative z-10 border-4 border-white">
+                          <span className="text-lg font-semibold text-gray-600">
+                            {getInitials(user.name)}
+                          </span>
+                        </div>
+                      )}
                       <div className="absolute inset-0 blur-lg opacity-20 bg-[#FFB300]" />
                     </div>
                     <h4 className="mt-3 text-sm font-semibold text-center">
