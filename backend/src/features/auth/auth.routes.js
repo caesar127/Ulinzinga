@@ -10,9 +10,14 @@ import {
   userLogin,
   userLogout,
   getCurrentUser,
+  validateUsername,
 } from "./auth.controller.js";
 import { verifyToken } from "../../core/middleware/auth.middleware.js";
-import { validateRequest, userRegistrationSchema, userLoginSchema } from "../../core/utils/validators.js";
+import {
+  validateRequest,
+  userRegistrationSchema,
+  userLoginSchema,
+} from "../../core/utils/validators.js";
 
 const router = express.Router();
 
@@ -33,5 +38,7 @@ router.post("/user/logout", verifyToken, userLogout);
 
 // Current logged-in user (protected)
 router.get("/me", verifyToken, getCurrentUser);
+
+router.get("/validateusername/:username", validateUsername);
 
 export default router;

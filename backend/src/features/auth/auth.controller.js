@@ -429,6 +429,39 @@ export const userLogout = async (req, res) => {
   }
 };
 
+export const validateUsername = async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    if (!username) {
+      return res.status(400).json({
+        status: "error",
+        message: "Username is required",
+      });
+    }
+
+    const existingUser = await User.findOne({ username });
+
+    const available = !existingUser;
+
+    return res.status(200).json({
+      status: "success",
+      message: available
+        ? "Username is available"
+        : "Username is already taken",
+      data: {
+        username,
+        available,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to validate username",
+    });
+  }
+};
+
 export const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user?.userId)
