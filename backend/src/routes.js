@@ -8,11 +8,11 @@ import { errorHandler } from "./core/middleware/error.middleware.js";
 
 const router = express.Router();
 
-router.use("/public", publicRoutes);
 router.use("/user", userRoutes);
-router.use("/organizer", organizerRoutes);
 router.use("/admin", adminRoutes);
 router.use("/vendor", vendorRoutes);
+router.use("/public", publicRoutes);
+router.use("/organizer", organizerRoutes);
 
 router.use(errorHandler);
 
