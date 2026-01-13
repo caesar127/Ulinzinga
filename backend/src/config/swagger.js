@@ -153,9 +153,15 @@ const openApiSpec = {
             },
           },
           caption: { type: "string" },
-          visibilityScope: { type: "string", enum: ["event", "profile", "vault"] },
+          visibilityScope: {
+            type: "string",
+            enum: ["event", "profile", "vault"],
+          },
           privacy: { type: "string", enum: ["public", "private"] },
-          approvalStatus: { type: "string", enum: ["pending", "approved", "rejected"] },
+          approvalStatus: {
+            type: "string",
+            enum: ["pending", "approved", "rejected"],
+          },
           approvedBy: { type: "string" },
           approvedAt: { type: "string", format: "date-time" },
           rejectionReason: { type: "string" },
@@ -399,6 +405,90 @@ const openApiSpec = {
         responses: {
           200: { description: "Current user data" },
           401: { description: "Unauthorized" },
+        },
+      },
+    },
+    "/api/user/auth/validateusername/{username}": {
+      get: {
+        summary: "Check username availability",
+        tags: ["Auth - User"],
+        parameters: [
+          {
+            in: "path",
+            name: "username",
+            required: true,
+            schema: { type: "string" },
+            description: "Username to validate",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Username validation result",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: {
+                      type: "string",
+                      example: "success",
+                    },
+                    message: {
+                      type: "string",
+                      example: "Username is available",
+                    },
+                    data: {
+                      type: "object",
+                      properties: {
+                        username: {
+                          type: "string",
+                          example: "caesar127",
+                        },
+                        available: {
+                          type: "boolean",
+                          example: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Username is required",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: { type: "string", example: "error" },
+                    message: {
+                      type: "string",
+                      example: "Username is required",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          500: {
+            description: "Failed to validate username",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: { type: "string", example: "error" },
+                    message: {
+                      type: "string",
+                      example: "Failed to validate username",
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -749,7 +839,7 @@ const openApiSpec = {
             schema: {
               type: "string",
               enum: ["start_date", "createdAt", "title"],
-              default: "createdAt"
+              default: "createdAt",
             },
             description: "Sort field",
           },
@@ -829,7 +919,7 @@ const openApiSpec = {
             schema: {
               type: "string",
               enum: ["start_date", "createdAt", "title"],
-              default: "createdAt"
+              default: "createdAt",
             },
             description: "Sort field",
           },
@@ -1022,10 +1112,16 @@ const openApiSpec = {
           {
             in: "query",
             name: "sortBy",
-            schema: { 
-              type: "string", 
-              enum: ["start_date", "createdAt", "updatedAt", "analytics.views", "title"],
-              default: "start_date"
+            schema: {
+              type: "string",
+              enum: [
+                "start_date",
+                "createdAt",
+                "updatedAt",
+                "analytics.views",
+                "title",
+              ],
+              default: "start_date",
             },
             description: "Sort field",
           },
@@ -1099,7 +1195,8 @@ const openApiSpec = {
             in: "query",
             name: "search",
             schema: { type: "string" },
-            description: "Search term to filter events by title, description, venue, or organizer",
+            description:
+              "Search term to filter events by title, description, venue, or organizer",
           },
           {
             in: "query",
@@ -1118,8 +1215,14 @@ const openApiSpec = {
             name: "sortBy",
             schema: {
               type: "string",
-              enum: ["start_date", "createdAt", "updatedAt", "analytics.views", "title"],
-              default: "start_date"
+              enum: [
+                "start_date",
+                "createdAt",
+                "updatedAt",
+                "analytics.views",
+                "title",
+              ],
+              default: "start_date",
             },
             description: "Sort field",
           },
@@ -1379,10 +1482,10 @@ const openApiSpec = {
           {
             in: "query",
             name: "sortBy",
-            schema: { 
-              type: "string", 
+            schema: {
+              type: "string",
               enum: ["created_at", "start_date", "title"],
-              default: "created_at"
+              default: "created_at",
             },
             description: "Sort field",
           },
@@ -1466,7 +1569,8 @@ const openApiSpec = {
                       type: "string",
                       format: "binary",
                     },
-                    description: "Image or video files to upload (up to 10 files)",
+                    description:
+                      "Image or video files to upload (up to 10 files)",
                   },
                   caption: {
                     type: "string",
@@ -1484,7 +1588,8 @@ const openApiSpec = {
                   },
                   eventId: {
                     type: "string",
-                    description: "Event ID (required if visibilityScope is 'event')",
+                    description:
+                      "Event ID (required if visibilityScope is 'event')",
                   },
                 },
                 required: ["files", "visibilityScope"],
