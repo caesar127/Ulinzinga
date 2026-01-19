@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const AnalyticsSchema = new mongoose.Schema({
   views: { type: Number, default: 0 },
   clicks: { type: Number, default: 0 },
+  search: { type: Number, default: 0 },
 });
 
 const EventSchema = new mongoose.Schema(
@@ -49,15 +50,34 @@ const EventSchema = new mongoose.Schema(
       name: String,
       email: String,
     },
+    venue: {
+      name: { type: String, default: null },
+      address: { type: String, default: null },
+      location: { type: String, default: null },
+    },
     balance: {
       currency: String,
       ref_id: String,
     },
+    tags: { type: [String], default: [], index: true },
+    description: { type: String, default: null },
+    banner_url: { type: String, default: null },
+    logo_url: { type: String, default: null },
+    title: { type: String, default: null },
+    terms_text: { type: String, default: null },
+    start_time: { type: String, default: null },
+    end_time: { type: String, default: null },
   },
   {
     timestamps: true,
   }
 );
+
+EventSchema.index({
+  title: "text",
+  description: "text",
+  "venue.name": "text",
+});
 
 const Event = mongoose.model("Event", EventSchema);
 
