@@ -9,13 +9,14 @@ import {
   updateEventStatus,
   deleteEvent,
   getUserTicketsByEmail,
+  searchEvents,
 } from "./events.controller.js";
 // import ticketsRoutes from "../tickets/tickets.routes.js";
 
 const router = express.Router();
 
 router.get("/", getAllEvents);
-router.get("/search", getAllEvents);
+router.get("/search", searchEvents);
 router.get("/:id", getEventById);
 router.post("/:eventSlug/purchase", initiatePurchase);
 router.post("/sync", syncEventsController);
