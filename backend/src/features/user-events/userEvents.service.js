@@ -8,51 +8,92 @@ export const getRecommendedEventsService = async (userId, queryParams = {}) => {
   const user = await User.findById(userId).select("interests");
   if (!user) throw new Error("User not found");
 
-  const userInterestIds = user.interests || [];
+  const interests = user.interests || [];
+  console.log("User interests:", interests);
 
-  let page = parseInt(queryParams.page) || 1;
-  let limit = parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT;
-
-  page = Math.max(1, page);
-  limit = Math.max(PAGINATION.EVENTS_MIN_LIMIT, Math.min(PAGINATION.EVENTS_MAX_LIMIT, limit));
-
+  const page = Math.max(1, parseInt(queryParams.page) || 1);
+  const limit = Math.max(
+    PAGINATION.EVENTS_MIN_LIMIT,
+    Math.min(
+      PAGINATION.EVENTS_MAX_LIMIT,
+      parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT
+    )
+  );
   const skip = (page - 1) * limit;
-
-  const validSortFields = ['createdAt', 'start_date', 'title'];
-  const sortBy = validSortFields.includes(queryParams.sortBy) ? queryParams.sortBy : 'createdAt';
-  const sortOrder = queryParams.sortOrder === 'asc' ? 1 : -1;
-  const sortOptions = { [sortBy]: sortOrder };
+  
+  const events = await Event.aggregate([
+    {
+      $match: {
+        isActive: true,
+        visible: true,
+      },
+    },
+    {
+      $addFields: {
+        interestMatchCount: {
+          $size: {
+            $setIntersection: ["$interests", interests],
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        score: {
+          $add: [
+            { $multiply: ["$interestMatchCount", 4] },
+            { $multiply: ["$interactions.views", 0.3] },
+            { $multiply: ["$interactions.favorites", 2] },
+            { $multiply: ["$interactions.ticketsSold", 4] },
+            {
+              $cond: [
+                {
+                  $gte: [
+                    "$createdAt",
+                    new Date(Date.now() - 1000 * 60 * 60 * 24 * 14),
+                  ],
+                },
+                3,
+                0,
+              ],
+            },
+          ],
+        },
+      },
+    },
+    { $match: { score: { $gt: 0 } } },
+    { $sort: { score: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ]);
 
   const totalCount = await Event.countDocuments({
     isActive: true,
     visible: true,
-    interests: { $in: userInterestIds },
+    interests: { $in: interests },
   });
 
-  const sortedEvents = await Event.find({
-    isActive: true,
-    visible: true,
-    interests: { $in: userInterestIds },
-  })
-    .sort(sortOptions)
-    .skip(skip)
-    .limit(limit);
-
-  const totalPages = Math.ceil(totalCount / limit);
-  const hasNextPage = page < totalPages;
-  const hasPrevPage = page > 1;
+  console.log(
+    "Recommended events (scored):",
+    events.map((e) => ({
+      id: e._id,
+      title: e.title,
+      score: e.score,
+      interestMatchCount: e.interestMatchCount,
+    }))
+  );
 
   return {
-    events: sortedEvents,
+    events,
     pagination: {
       currentPage: page,
-      totalPages,
+      totalPages: Math.ceil(totalCount / limit),
       totalCount,
       limit,
-      hasNextPage,
-      hasPrevPage,
-      sortBy,
-      sortOrder: sortOrder === 1 ? 'asc' : 'desc',
+      hasNextPage: page * limit < totalCount,
+      hasPrevPage: page > 1,
+      sortBy: "score",
+      sortOrder: "desc",
     },
   };
 };
@@ -67,7 +108,10 @@ export const getTrendingEventsService = async (userId, queryParams = {}) => {
   let limit = parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT;
 
   page = Math.max(1, page);
-  limit = Math.max(PAGINATION.EVENTS_MIN_LIMIT, Math.min(PAGINATION.EVENTS_MAX_LIMIT, limit));
+  limit = Math.max(
+    PAGINATION.EVENTS_MIN_LIMIT,
+    Math.min(PAGINATION.EVENTS_MAX_LIMIT, limit)
+  );
 
   const skip = (page - 1) * limit;
 
@@ -109,8 +153,8 @@ export const getTrendingEventsService = async (userId, queryParams = {}) => {
       limit,
       hasNextPage,
       hasPrevPage,
-      sortBy: 'score',
-      sortOrder: 'desc',
+      sortBy: "score",
+      sortOrder: "desc",
     },
   };
 };
@@ -220,56 +264,57 @@ export const getEventsByInterestsService = async (userId, queryParams = {}) => {
   const user = await User.findById(userId).select("interests");
   if (!user) throw new Error("User not found");
 
-  const userInterestIds = user.interests || [];
+  const interests = user.interests || [];
 
-  let page = parseInt(queryParams.page) || 1;
-  let limit = parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT;
-
-  page = Math.max(1, page);
-  limit = Math.max(PAGINATION.EVENTS_MIN_LIMIT, Math.min(PAGINATION.EVENTS_MAX_LIMIT, limit));
-
+  const page = Math.max(1, parseInt(queryParams.page) || 1);
+  const limit = Math.max(
+    PAGINATION.EVENTS_MIN_LIMIT,
+    Math.min(
+      PAGINATION.EVENTS_MAX_LIMIT,
+      parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT
+    )
+  );
   const skip = (page - 1) * limit;
 
-  const validSortFields = ['createdAt', 'start_date', 'title'];
-  const sortBy = validSortFields.includes(queryParams.sortBy) ? queryParams.sortBy : 'createdAt';
-  const sortOrder = queryParams.sortOrder === 'asc' ? 1 : -1;
-  const sortOptions = { [sortBy]: sortOrder };
+  const sortBy = ["createdAt", "start_date", "title"].includes(
+    queryParams.sortBy
+  )
+    ? queryParams.sortBy
+    : "createdAt";
+  const sortOrder = queryParams.sortOrder === "asc" ? 1 : -1;
 
-  const totalCount = await Event.countDocuments({
+  const filter = {
     isActive: true,
     visible: true,
-    interests: { $in: userInterestIds },
-  });
+    interests: { $in: interests },
+  };
 
-  const sortedEvents = await Event.find({
-    isActive: true,
-    visible: true,
-    interests: { $in: userInterestIds },
-  })
-    .sort(sortOptions)
+  const totalCount = await Event.countDocuments(filter);
+  const events = await Event.find(filter)
+    .sort({ [sortBy]: sortOrder })
     .skip(skip)
     .limit(limit);
 
-  const totalPages = Math.ceil(totalCount / limit);
-  const hasNextPage = page < totalPages;
-  const hasPrevPage = page > 1;
-
   return {
-    events: sortedEvents,
+    events,
     pagination: {
       currentPage: page,
-      totalPages,
+      totalPages: Math.ceil(totalCount / limit),
       totalCount,
       limit,
-      hasNextPage,
-      hasPrevPage,
+      hasNextPage: page * limit < totalCount,
+      hasPrevPage: page > 1,
       sortBy,
-      sortOrder: sortOrder === 1 ? 'asc' : 'desc',
+      sortOrder: sortOrder === 1 ? "asc" : "desc",
     },
   };
 };
 
-export const getUserPurchasedEventsService = async (userId, limit = 50, page = 1) => {
+export const getUserPurchasedEventsService = async (
+  userId,
+  limit = 50,
+  page = 1
+) => {
   try {
     const user = await User.findById(userId).select("email");
     if (!user?.email) {
