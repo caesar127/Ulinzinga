@@ -14,218 +14,84 @@ const stripHtml = (html = "") => {
   return html.replace(/<[^>]*>?/gm, "").trim();
 };
 
+const safeLower = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value.toLowerCase();
+  return String(value).toLowerCase();
+};
+
 export const getAllEventsService = async (queryParams = {}) => {
   try {
-    if (queryParams.cleanupOrphaned === "true") {
-      try {
-        await cleanupOrphanedEvents();
-      } catch {}
-    }
-
-    let page = parseInt(queryParams.page) || 1;
-    let limit = parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT;
-
-    page = Math.max(1, page);
-    limit = Math.max(
+    const page = Math.max(1, parseInt(queryParams.page) || 1);
+    const limit = Math.max(
       PAGINATION.EVENTS_MIN_LIMIT,
-      Math.min(PAGINATION.EVENTS_MAX_LIMIT, limit)
+      Math.min(
+        PAGINATION.EVENTS_MAX_LIMIT,
+        parseInt(queryParams.limit) || PAGINATION.EVENTS_DEFAULT_LIMIT
+      )
     );
-
     const skip = (page - 1) * limit;
 
-    const validSortFields = Object.values(SORT_OPTIONS.EVENTS_SORT_BY);
-    const sortBy = validSortFields.includes(queryParams.sortBy)
+    const sortBy = Object.values(SORT_OPTIONS.EVENTS_SORT_BY).includes(
+      queryParams.sortBy
+    )
       ? queryParams.sortBy
       : SORT_OPTIONS.EVENTS_SORT_BY.DATE;
     const sortOrder =
       queryParams.sortOrder === SORT_OPTIONS.EVENTS_SORT_ORDER.ASC ? 1 : -1;
-    const sortOptions = { [sortBy]: sortOrder };
 
-    let localEventsQuery = Event.find({}).sort(sortOptions);
-    let countQuery = Event.find({});
+    const filter = {};
 
-    if (queryParams.visible) {
-      localEventsQuery = localEventsQuery
-        .where("visible")
-        .equals(queryParams.visible === "true");
-      countQuery = countQuery
-        .where("visible")
-        .equals(queryParams.visible === "true");
+    if (queryParams.visible !== undefined)
+      filter.visible = queryParams.visible === "true";
+    if (queryParams.isActive !== undefined)
+      filter.isActive = queryParams.isActive === "true";
+
+    const dateFilter = {};
+    if (queryParams.isPast !== undefined) {
+      dateFilter[queryParams.isPast === "true" ? "$lt" : "$gte"] = new Date();
     }
-    if (queryParams.isActive) {
-      localEventsQuery = localEventsQuery
-        .where("isActive")
-        .equals(queryParams.isActive === "true");
-      countQuery = countQuery
-        .where("isActive")
-        .equals(queryParams.isActive === "true");
-    }
-
-    if (queryParams.isPast) {
-      const isPastFilter = queryParams.isPast === "true";
-      if (isPastFilter) {
-        localEventsQuery = localEventsQuery.where({
-          $or: [
-            { isPast: true },
-            {
-              end_date: {
-                $exists: true,
-                $ne: null,
-                $lt: new Date(),
-              },
-            },
-          ],
-        });
-      } else {
-        localEventsQuery = localEventsQuery.where({
-          $and: [
-            { isPast: false },
-            {
-              $or: [
-                { end_date: null },
-                { end_date: { $exists: false } },
-                { end_date: { $gte: new Date() } },
-              ],
-            },
-          ],
-        });
-      }
-    }
-
-    if (queryParams.startDate) {
-      const startDate = new Date(queryParams.startDate);
-      if (!isNaN(startDate.getTime())) {
-        localEventsQuery = localEventsQuery.where("end_date").gte(startDate);
-        countQuery = countQuery.where("end_date").gte(startDate);
-      }
-    }
-
-    if (queryParams.endDate) {
-      const endDate = new Date(queryParams.endDate);
-      if (!isNaN(endDate.getTime())) {
-        localEventsQuery = localEventsQuery.where("end_date").lte(endDate);
-        countQuery = countQuery.where("end_date").lte(endDate);
-      }
-    }
-
+    if (queryParams.startDate)
+      dateFilter.$gte = new Date(queryParams.startDate);
+    if (queryParams.endDate) dateFilter.$lte = new Date(queryParams.endDate);
     if (queryParams.onDate) {
-      const onDate = new Date(queryParams.onDate);
-      if (!isNaN(onDate.getTime())) {
-        const startOfDay = new Date(onDate.setHours(0, 0, 0, 0));
-        const endOfDay = new Date(onDate.setHours(23, 59, 59, 999));
-
-        localEventsQuery = localEventsQuery
-          .where("end_date")
-          .gte(startOfDay)
-          .lte(endOfDay);
-        countQuery = countQuery.where("end_date").gte(startOfDay).lte(endOfDay);
-      }
+      const d = new Date(queryParams.onDate);
+      dateFilter.$gte = new Date(d.setHours(0, 0, 0, 0));
+      dateFilter.$lte = new Date(d.setHours(23, 59, 59, 999));
     }
+    if (Object.keys(dateFilter).length) filter.end_date = dateFilter;
 
-    const totalCount = await countQuery.countDocuments();
+    if (queryParams.search)
+      filter.$text = { $search: queryParams.search.trim() };
 
-    const localEvents = await localEventsQuery.skip(skip).limit(limit).exec();
-    if (!localEvents || localEvents.length === 0) return [];
+    const totalCount = await Event.countDocuments(filter);
+    const events = await Event.find(filter)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-    const eventSlugs = localEvents
-      .filter((event) => event.slug)
-      .map((event) => event.slug);
-
-    if (eventSlugs.length === 0) return [];
-
-    const externalEventPromises = eventSlugs.map(async (slug) => {
-      try {
-        const options = {
-          method: "GET",
-          url: `${BASE_URL}/events/${slug}`,
-          headers: AUTH_HEADER,
-        };
-        const { data } = await axios.request(options);
-        return {
-          slug,
-          externalData: data.data,
-        };
-      } catch (error) {
-        return {
-          slug,
-          externalData: null,
-        };
-      }
-    });
-
-    const externalResults = await Promise.all(externalEventPromises);
-
-    const mergedEvents = localEvents.map((localEvent) => {
-      const externalResult = externalResults.find(
-        (result) => result.slug === localEvent.slug
-      );
-      const externalData = externalResult?.externalData;
-
-      if (externalData) {
-        return {
-          ...localEvent.toObject(),
-          ...externalData,
-          description: stripHtml(externalData.description),
-          externalApiStatus: "available",
-        };
-      } else {
-        return {
-          ...localEvent.toObject(),
-          title: localEvent.slug || "Event",
-          description:
-            "Event details not available from external source (will be cleaned up in next sync)",
-          externalApiStatus: "not_found",
-          start_date: localEvent.createdAt,
-          venue: "Venue information not available",
-          organizer:
-            localEvent.organizer || "Organizer information not available",
-        };
-      }
-    });
-
-    let filteredEvents = mergedEvents;
-
-    // Apply search filter if provided
-    if (queryParams.search) {
-      const searchTerm = queryParams.search.toLowerCase().trim();
-      filteredEvents = mergedEvents.filter(event => {
-        const title = (event.title || '').toLowerCase();
-        const description = (event.description || '').toLowerCase();
-        const venue = (event.venue || '').toLowerCase();
-        const organizer = (event.organizer || '').toLowerCase();
-
-        return title.includes(searchTerm) ||
-               description.includes(searchTerm) ||
-               venue.includes(searchTerm) ||
-               organizer.includes(searchTerm);
-      });
-    }
-
-    const sortedEvents = filteredEvents.sort((a, b) => {
-      const dateA = a.start_date ? new Date(a.start_date) : a.createdAt;
-      const dateB = b.start_date ? new Date(b.start_date) : b.createdAt;
-      return sortOrder === 1 ? dateA - dateB : dateB - dateA;
-    });
-
-    const totalPages = Math.ceil(totalCount / limit);
-    const hasNextPage = page < totalPages;
-    const hasPrevPage = page > 1;
+    const processedEvents = events.map((e) => ({
+      ...e,
+      description: stripHtml(e.description || ""),
+      externalApiStatus: "local",
+    }));
 
     return {
-      events: sortedEvents,
+      events: processedEvents,
       pagination: {
         currentPage: page,
-        totalPages,
+        totalPages: Math.ceil(totalCount / limit),
         totalCount,
         limit,
-        hasNextPage,
-        hasPrevPage,
+        hasNextPage: page * limit < totalCount,
+        hasPrevPage: page > 1,
         sortBy,
         sortOrder: sortOrder === 1 ? "asc" : "desc",
       },
     };
-  } catch (error) {
-    throw error;
+  } catch (err) {
+    throw new Error(`Failed to fetch events: ${err.message}`);
   }
 };
 
@@ -341,6 +207,14 @@ export const syncEvents = async () => {
           end_date: endDateValue,
           lastSyncedAt: new Date(),
           interests: [],
+          title: event.title,
+          venue: event.venue,
+          description: event.description,
+          banner_url: event.banner_url,
+          logo_url: event.logo_url,
+          terms_text: event.terms_text,
+          start_time: event.start_time,
+          end_time: event.end_time,
         };
 
         // Store merchant information from PayChangu
@@ -778,6 +652,136 @@ export const deleteEventService = async (eventId) => {
     };
   } catch (error) {
     throw new Error(`Failed to delete event: ${error.message}`);
+  }
+};
+
+export const searchEventsService = async (queryParams = {}) => {
+  try {
+    const {
+      q: searchTerm,
+      category,
+      organizer,
+      tags,
+      limit = 20,
+      page = 1,
+    } = queryParams;
+
+    if (!searchTerm && !category && !organizer && !tags) {
+      throw new Error("At least one search parameter is required");
+    }
+
+    let searchQuery = { visible: true, isActive: true };
+    let textSearchConditions = [];
+
+    // Build search conditions for database fields only
+    if (searchTerm) {
+      const searchRegex = new RegExp(searchTerm.trim(), "i");
+      textSearchConditions.push(
+        { slug: searchRegex },
+        { tags: { $in: [searchRegex] } }
+      );
+    }
+
+    if (category) {
+      const categoryDoc = await EventCategory.findOne({
+        $or: [{ name: new RegExp(category, "i") }],
+      });
+      if (categoryDoc) {
+        searchQuery.interests = categoryDoc._id;
+      }
+    }
+
+    if (tags) {
+      const tagArray = Array.isArray(tags) ? tags : [tags];
+      searchQuery.tags = { $in: tagArray.map((tag) => new RegExp(tag, "i")) };
+    }
+
+    if (textSearchConditions.length > 0) {
+      searchQuery.$or = textSearchConditions;
+    }
+
+    const skip = (page - 1) * limit;
+    const localEvents = await Event.find(searchQuery)
+      .populate("interests", "name")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .exec();
+
+    if (!localEvents.length) {
+      return { events: [], total: 0, page, limit };
+    }
+
+    // Fetch external data for found events
+    const eventSlugs = localEvents
+      .filter((event) => event.slug)
+      .map((event) => event.slug);
+    const externalEventPromises = eventSlugs.map(async (slug) => {
+      try {
+        const options = {
+          method: "GET",
+          url: `${BASE_URL}/events/${slug}`,
+          headers: AUTH_HEADER,
+        };
+        const { data } = await axios.request(options);
+        return { slug, externalData: data.data };
+      } catch {
+        return { slug, externalData: null };
+      }
+    });
+
+    const externalResults = await Promise.all(externalEventPromises);
+
+    // Merge local and external data
+    const mergedEvents = localEvents.map((localEvent) => {
+      const externalResult = externalResults.find(
+        (result) => result.slug === localEvent.slug
+      );
+      const externalData = externalResult?.externalData;
+
+      if (externalData) {
+        return {
+          ...localEvent.toObject(),
+          ...externalData,
+          description: stripHtml(externalData.description),
+        };
+      }
+      return localEvent.toObject();
+    });
+
+    // Apply text search filters on merged data
+    let filteredEvents = mergedEvents;
+    if (searchTerm || organizer) {
+      const searchLower = searchTerm ? searchTerm.toLowerCase() : "";
+      const organizerLower = organizer ? organizer.toLowerCase() : "";
+
+      const filteredEvents = processedEvents.filter((event) => {
+        const searchableText = [
+          event.title,
+          event.description,
+          event.venue,
+          event.organizer,
+          event.merchant?.name,
+          ...(event.tags || []),
+          ...(event.interests?.map((i) => i.name) || []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(searchLower);
+      });
+    }
+
+    return {
+      events: filteredEvents,
+      total: filteredEvents.length,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(filteredEvents.length / limit),
+    };
+  } catch (error) {
+    throw error;
   }
 };
 
