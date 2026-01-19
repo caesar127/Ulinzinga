@@ -16,17 +16,21 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router.get("/recommended", getRecommendedEvents);
-router.get("/trending", getTrendingEvents);
-router.get("/interests", getEventsByInterests);
+router.get("/recommended", verifyToken, getRecommendedEvents);
+router.get("/trending", verifyToken, getTrendingEvents);
+router.get("/interests", verifyToken, getEventsByInterests);
 
-router.post("/favorites/events", addFavoriteEvent);
-router.delete("/favorites/events/:eventId", removeFavoriteEvent);
+router.post("/favorites/events", verifyToken, addFavoriteEvent);
+router.delete("/favorites/events/:eventId", verifyToken, removeFavoriteEvent);
 
-router.post("/favorites/organizers", addFavoriteOrganizer);
-router.delete("/favorites/organizers/:organizerId", removeFavoriteOrganizer);
+router.post("/favorites/organizers", verifyToken, addFavoriteOrganizer);
+router.delete(
+  "/favorites/organizers/:organizerId",
+  verifyToken,
+  removeFavoriteOrganizer
+);
 
-router.get("/purchasedevents", getUserPurchasedEvents);
-router.get("/tickets/:eventId", getUserEventDetails);
+router.get("/purchasedevents", verifyToken, getUserPurchasedEvents);
+router.get("/tickets/:eventId", verifyToken, getUserEventDetails);
 
 export default router;
