@@ -8,10 +8,12 @@ import {
   updateEventStatusService,
   deleteEventService,
   getUserTicketsByEmailService,
+  searchEventsService,
 } from "./events.service.js";
 
 export const getAllEvents = async (req, res) => {
   try {
+    console.log("Query Params:", req.query);
     const queryParams = req.query;
     const result = await getAllEventsService(queryParams);
     return res.status(200).json({
@@ -206,6 +208,31 @@ export const deleteEvent = async (req, res) => {
       success: false,
       message: "Failed to delete event",
       error: error.message,
+    });
+  }
+};
+
+export const searchEvents = async (req, res) => {
+  try {
+    const queryParams = req.query;
+    const result = await searchEventsService(queryParams);
+    
+    return res.status(200).json({
+      status: "success",
+      message: "Events search completed successfully",
+      data: result.events,
+      pagination: {
+        currentPage: result.page,
+        totalPages: result.totalPages,
+        totalCount: result.total,
+        limit: result.limit,
+      },
+    });
+  } catch (error) {
+    return res.status(error.response?.status || 500).json({
+      status: "error",
+      message: "Failed to search events",
+      error: error.response?.data || error.message,
     });
   }
 };
