@@ -11,6 +11,8 @@ import {
   userLogout,
   getCurrentUser,
   validateUsername,
+  forgotPassword,
+  resetPassword,
 } from "./auth.controller.js";
 import { verifyToken } from "../../core/middleware/auth.middleware.js";
 import {
@@ -35,6 +37,8 @@ router.get("/google/callback", googleCallback);
 router.post("/user/signup", userSignup);
 router.post("/user/signin", validateRequest(userLoginSchema), userLogin);
 router.post("/user/logout", verifyToken, userLogout);
+router.post("/user/forgot-password", forgotPassword);
+router.post("/user/reset-password", resetPassword);
 
 // Current logged-in user (protected)
 router.get("/me", verifyToken, getCurrentUser);
