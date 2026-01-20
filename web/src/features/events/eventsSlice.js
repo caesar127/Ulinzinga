@@ -29,6 +29,7 @@ const eventsSlice = createSlice({
           const unique = newEvents.filter(
             (ev) => !state.events.some((existing) => existing._id === ev._id)
           );
+          console.log(unique.length + " new unique events fetched.");
           state.events = [...state.events, ...unique];
           state.status = "succeeded";
         }
