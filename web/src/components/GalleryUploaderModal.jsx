@@ -46,6 +46,7 @@ const GalleryUploaderModal = ({ open, onClose, event }) => {
       handleSuccessToast2("Upload submitted for approval.");
       closeModal();
     } catch (err) {
+      console.log(err)
       handleErrorToast2(err?.data?.message || "Upload failed. Try again.");
     }
   };
