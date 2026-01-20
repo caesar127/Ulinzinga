@@ -137,6 +137,10 @@ ContentSchema.index({
   createdAt: -1,
 });
 
+ContentSchema.index({
+  caption: "text",
+});
+
 const Content = mongoose.model("Content", ContentSchema);
 
 export default Content;
