@@ -3,82 +3,23 @@ import GalleryFeed from "../components/GalleryFeed";
 import funagamesicon from "../assets/icons/funagamesicon.svg";
 import EventsFilterBar from "../components/EventsFilterBar";
 import liveshowsicon from "../assets/icons/liveshowsicon.svg";
+import { useGetGalleryQuery } from "../features/content/contentApiSlice";
 
 function GalleryPage() {
-  const images = [
-    {
-      image: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe",
-      avatar: "https://randomuser.me/api/portraits/women/32.jpg",
-      name: "Alicia Green",
-      title: "Live Concert Night",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e",
-      avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-      name: "Daniel Cho",
-      title: "Friends Meetup",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1531058020387-3be344556be6",
-      avatar: "https://randomuser.me/api/portraits/women/76.jpg",
-      name: "Marina Lopes",
-      title: "Festival Lights",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f",
-      avatar: "https://randomuser.me/api/portraits/men/24.jpg",
-      name: "Tom Becker",
-      title: "Stage Experience",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1504805572947-34fad45aed93",
-      avatar: "https://randomuser.me/api/portraits/men/12.jpg",
-      name: "Eric Mbaye",
-      title: "Rock Vibes",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1515168833906-d2a3b82b302a",
-      avatar: "https://randomuser.me/api/portraits/women/14.jpg",
-      name: "Sophie Tran",
-      title: "Dance Floor Energy",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1511988617509-a57c8a288659",
-      avatar: "https://randomuser.me/api/portraits/men/37.jpg",
-      name: "Nico Brown",
-      title: "Wedding Ceremony",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
-      avatar: "https://randomuser.me/api/portraits/women/41.jpg",
-      name: "Amara Bello",
-      title: "Beach Party",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678",
-      avatar: "https://randomuser.me/api/portraits/men/29.jpg",
-      name: "Liam Okoro",
-      title: "DJ Festival",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
-      avatar: "https://randomuser.me/api/portraits/men/20.jpg",
-      name: "Peter Zhou",
-      title: "Art Exhibition",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f",
-      avatar: "https://randomuser.me/api/portraits/women/65.jpg",
-      name: "Leah Wanjiru",
-      title: "Club Lights",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1504805572947-34fad45aed93",
-      avatar: "https://randomuser.me/api/portraits/men/11.jpg",
-      name: "Marcus Hale",
-      title: "Outdoor Festival",
-    },
-  ];
+  const { data: galleryData, isLoading, error } = useGetGalleryQuery({ limit: 50 });
+
+  const images = galleryData?.content?.flatMap((content) =>
+    content.media
+      .filter((media) => media.type === "image")
+      .map((media) => ({
+        image: media.url,
+        avatar: content.user?.avatar || "",
+        name: content.user?.name || "Unknown",
+        title: content.event?.title || content.caption || "Event Photo",
+      }))
+  ) || [];
+
+  const heroImages = images.slice(0, 5);
 
   return (
     <div className="min-h-screen px-24">
@@ -107,31 +48,31 @@ function GalleryPage() {
 
           {/* Main Image Cluster */}
           <img
-            src={images[0].image}
+            src={heroImages[0]?.image}
             className="h-40 w-36 md:h-52 md:w-48 object-cover rounded-3xl shadow-xl shadow-white -rotate-5 -mr-2 z-50"
             alt=""
           />
 
           <img
-            src={images[1].image}
+            src={heroImages[1]?.image}
             className="h-44 w-40 md:h-56 md:w-52 object-cover rounded-3xl shadow-xl shadow-white z-40 -mr-1 delay-150"
             alt=""
           />
 
           <img
-            src={images[2].image}
+            src={heroImages[2]?.image}
             className="h-40 w-36 md:h-50 md:w-48 object-cover rounded-3xl shadow-xl shadow-white rotate-5 z-30 -mr-1 delay-300"
             alt=""
           />
 
           <img
-            src={images[3].image}
+            src={heroImages[3]?.image}
             className="h-44 w-36 md:h-54 md:w-48 object-cover rounded-3xl shadow-xl shadow-white -rotate-2 z-20 -mr-2 delay-200"
             alt=""
           />
 
           <img
-            src={images[4].image}
+            src={heroImages[4]?.image}
             className="h-40 w-36 md:h-52 md:w-48 object-cover rounded-3xl shadow-xl shadow-white -rotate-7 z-10 delay-500"
             alt=""
           />
@@ -144,7 +85,13 @@ function GalleryPage() {
       </div>
 
       <EventsFilterBar />
-      <GalleryFeed images={images} />
+      {isLoading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      ) : (
+        <GalleryFeed images={images} />
+      )}
     </div>
   );
 }
