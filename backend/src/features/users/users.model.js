@@ -61,8 +61,16 @@ const UserSchema = new Schema(
     lastLogin: Date,
     views: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
+    resetToken: { type: String, select: false },
+    resetTokenExpiry: { type: Date, select: false },
   },
   { timestamps: true }
 );
+
+UserSchema.index({
+  name: "text",
+  username: "text",
+  "profile.bio": "text",
+});
 
 export default model("User", UserSchema);
