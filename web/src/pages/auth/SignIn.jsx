@@ -93,6 +93,12 @@ function SignInPage() {
           placeholder="Password"
         />
 
+        <div className="text-right">
+          <Link to="/forgot-password" className="text-sm text-[#FFB300] hover:underline">
+            Forgot password?
+          </Link>
+        </div>
+
         <button
           onClick={handleContinue}
           disabled={isLoading}
