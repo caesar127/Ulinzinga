@@ -47,6 +47,20 @@ export const authApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
+    forgotPassword: builder.mutation({
+      query: (email) => ({
+        url: `${AUTH_URL}/user/forgot-password`,
+        method: "POST",
+        body: { email },
+      }),
+    }),
+    resetPassword: builder.mutation({
+      query: ({ token, newPassword }) => ({
+        url: `${AUTH_URL}/user/reset-password`,
+        method: "POST",
+        body: { token, newPassword },
+      }),
+    }),
 
     // Google OAuth
     getGoogleAuthUrl: builder.query({
@@ -86,6 +100,8 @@ export const {
   // User
   useUserSignupMutation,
   useUserSigninMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
   // Google
   useGetGoogleAuthUrlQuery,
   // Common
