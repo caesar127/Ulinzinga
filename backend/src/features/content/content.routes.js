@@ -5,6 +5,7 @@ import {
   fetchEventContent,
   fetchUserContent,
   fetchVault,
+  fetchGalleryContent,
   fetchPendingContent,
   approveContent,
   rejectContent,
@@ -20,6 +21,8 @@ router.post("/upload", verifyToken, upload.array("files", 10), uploadContent);
 
 router.get("/event/:eventId/access", verifyToken, checkEventUploadAccess);
 router.get("/event/:eventId", fetchEventContent);
+
+router.get("/gallery", fetchGalleryContent);
 
 router.get("/user/:userId", fetchUserContent);
 router.get("/vault", verifyToken, fetchVault);
