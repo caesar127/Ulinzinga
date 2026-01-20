@@ -1,10 +1,18 @@
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
 let resend = null;
 
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+} else {
+  console.warn(
+    "RESEND_API_KEY not found. Email functionality will be disabled."
+  );
+}
+
 export const sendEmail = async (to, subject, html) => {
   if (!resend) {
-    return { success: false, error: 'Email service not configured' };
+    return { success: false, error: "Email service not configured" };
   }
 
   try {
@@ -14,9 +22,9 @@ export const sendEmail = async (to, subject, html) => {
       subject,
       html,
     });
+
     return { success: true, messageId: data.id };
   } catch (error) {
-    console.error('Error sending email:', error);
     return { success: false, error: error.message };
   }
 };
