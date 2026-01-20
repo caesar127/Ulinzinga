@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import SignInPage from "./pages/auth/SignIn";
 import SignUpPage from "./pages/auth/SignUp";
 import AuthCallbackPage from "./pages/auth/AuthCallbackPage";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 import HomePage from "./pages/HomePage";
 import EventsPage from "./pages/EventsPage";
@@ -29,6 +31,8 @@ function App() {
         <Route element={<EmptyLayout />}>
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/payment/redirect" element={<PaymentRedirectPage />} />
 
