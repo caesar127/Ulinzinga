@@ -1,6 +1,7 @@
 import { apiSlice } from "@/api/apiSlice";
 
 const CONTENT_URL = "/api/user/content";
+const PUBLIC_CONTENT_URL = "/api/public/content";
 
 export const contentApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -114,6 +115,29 @@ export const contentApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    getGallery: builder.query({
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams(params);
+        return {
+          url: `${PUBLIC_CONTENT_URL}/gallery?${searchParams.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Content"],
+      keepUnusedDataFor: 300,
+      transformResponse: (response) => ({
+        content: response?.data || [],
+        pagination: response?.pagination || {
+          currentPage: 1,
+          totalPages: 1,
+          totalCount: 0,
+          limit: 20,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      }),
+    }),
+
     getPendingContent: builder.query({
       query: (eventId) => ({
         url: `${CONTENT_URL}/pending/${eventId}`,
@@ -174,6 +198,8 @@ export const {
   useLazyGetUserContentQuery,
   useGetVaultQuery,
   useLazyGetVaultQuery,
+  useGetGalleryQuery,
+  useLazyGetGalleryQuery,
   useGetPendingContentQuery,
   useLazyGetPendingContentQuery,
   useCheckEventUploadAccessQuery,
