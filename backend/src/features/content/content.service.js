@@ -199,6 +199,38 @@ export const deleteContentItemWithStorage = async (
   return true;
 };
 
+export const getGalleryContent = async (page = 1, limit = 20) => {
+  const query = {
+    // visibilityScope: "event",
+    // privacy: "public",
+    // approvalStatus: "approved",
+  };
+
+  const [content, totalCount] = await Promise.all([
+    Content.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate("user", "name avatar")
+      .populate("event", "title"),
+    Content.countDocuments(query),
+  ]);
+
+  const totalPages = Math.ceil(totalCount / limit);
+
+  return {
+    content,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalCount,
+      limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    },
+  };
+};
+
 export const fetchUserContentService = async (userId, viewerId, page = 1, limit = 20) => {
   const ownerId = userId;
 
