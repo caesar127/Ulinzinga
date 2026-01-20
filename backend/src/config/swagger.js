@@ -567,8 +567,58 @@ const openApiSpec = {
         },
       },
     },
+    "/api/user/auth/user/forgot-password": {
+      post: {
+        summary: "Request password reset",
+        tags: ["Auth - User"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["email"],
+                properties: {
+                  email: { type: "string", format: "email" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Password reset email sent" },
+          404: { description: "User not found" },
+          500: { description: "Failed to send email" },
+        },
+      },
+    },
+    "/api/user/auth/user/reset-password": {
+      post: {
+        summary: "Reset password with token",
+        tags: ["Auth - User"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["token", "newPassword"],
+                properties: {
+                  token: { type: "string", description: "Reset token from email" },
+                  newPassword: { type: "string", minLength: 6, description: "New password" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Password reset successfully" },
+          400: { description: "Invalid or expired token" },
+          500: { description: "Failed to reset password" },
+        },
+      },
+    },
 
-    // ==================== USERS ENDPOINTS ====================
     // ==================== USERS ENDPOINTS ====================
     "/api/user/users/picture": {
       post: {
@@ -1287,6 +1337,84 @@ const openApiSpec = {
         },
       },
     },
+    "/api/public/search": {
+      get: {
+        summary: "General search across events, content, and organizers",
+        tags: ["Events"],
+        parameters: [
+          {
+            in: "query",
+            name: "q",
+            schema: { type: "string" },
+            description: "Search query term",
+            required: true,
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 1, maximum: 50, default: 10 },
+            description: "Maximum number of results per category",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Search results across different categories",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: { type: "string", example: "success" },
+                    message: { type: "string", example: "Search results retrieved successfully" },
+                    data: {
+                      type: "object",
+                      properties: {
+                        events: {
+                          type: "array",
+                          items: { $ref: "#/components/schemas/Event" },
+                          description: "Matching events",
+                        },
+                        content: {
+                          type: "array",
+                          items: { $ref: "#/components/schemas/Content" },
+                          description: "Matching content items",
+                        },
+                        organizers: {
+                          type: "array",
+                          items: { $ref: "#/components/schemas/User" },
+                          description: "Matching organizers",
+                        },
+                        connections: {
+                          type: "array",
+                          items: { $ref: "#/components/schemas/User" },
+                          description: "Matching connections (if authenticated)",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Query parameter is required",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string", example: "Query parameter is required" },
+                  },
+                },
+              },
+            },
+          },
+          500: {
+            description: "Internal server error",
+          },
+        },
+      },
+    },
     "/api/public/events/{id}": {
       get: {
         summary: "Get event by ID",
@@ -1906,6 +2034,57 @@ const openApiSpec = {
         responses: {
           200: { description: "Gallery item deleted successfully" },
           404: { description: "Gallery item not found" },
+        },
+      },
+    },
+    "/api/public/content/gallery": {
+      get: {
+        summary: "Fetch public gallery content",
+        tags: ["Content"],
+        parameters: [
+          {
+            in: "query",
+            name: "page",
+            schema: { type: "integer", minimum: 1, default: 1 },
+            description: "Page number",
+          },
+          {
+            in: "query",
+            name: "limit",
+            schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            description: "Items per page",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Public gallery content",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/Content" },
+                    },
+                    pagination: {
+                      type: "object",
+                      properties: {
+                        currentPage: { type: "integer" },
+                        totalPages: { type: "integer" },
+                        totalCount: { type: "integer" },
+                        limit: { type: "integer" },
+                        hasNextPage: { type: "boolean" },
+                        hasPrevPage: { type: "boolean" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          500: { description: "Internal server error" },
         },
       },
     },
