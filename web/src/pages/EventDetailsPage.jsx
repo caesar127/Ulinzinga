@@ -12,6 +12,7 @@ import EventCard from "../components/EventCard";
 import { formatCurrency } from "../shared/utils";
 import { handleErrorToast2 } from "../utils/toasts";
 import { useState } from "react";
+import { selectUser, selectIsAuthenticated } from "../features/auth/authSlice";
 
 const pageVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -33,6 +34,8 @@ function EventDetailsPage() {
   const { selectedEvent, events, isLoading } = useSelector(
     (state) => state.event
   );
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const event = selectedEvent || {};
   
   useGetEventByIdQuery(event?.slug, { skip: !event?.slug });
@@ -91,18 +94,26 @@ function EventDetailsPage() {
 
   const handlePay = async () => {
     if (!selectedPackage) return;
-    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-    if (!fullName || !formData.email) {
-      handleErrorToast2("Please enter full name and email");
-      return;
+    let name, email;
+    if (isAuthenticated) {
+      name = user.name;
+      email = user.email;
+    } else {
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      if (!fullName || !formData.email) {
+        handleErrorToast2("Please enter full name and email");
+        return;
+      }
+      name = fullName;
+      email = formData.email;
     }
 
     try {
       const res = await purchaseTicket({
         eventSlug: event.slug,
         package_id: selectedPackage.id,
-        name: fullName,
-        email: formData.email,
+        name,
+        email,
         quantity: 1,
       }).unwrap();
 
@@ -384,36 +395,46 @@ function EventDetailsPage() {
                 </button>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="First name"
-                  value={formData.firstName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, firstName: e.target.value })
-                  }
-                  className="p-3 bg-gray-100 rounded-xl focus:outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Last name"
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lastName: e.target.value })
-                  }
-                  className="p-3 bg-gray-100 rounded-xl focus:outline-none"
-                />
-              </div>
+              {isAuthenticated ? (
+                <div className="mt-4 p-3 bg-gray-50 rounded-xl">
+                  <p className="text-sm text-gray-700">Proceeding with your account:</p>
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-sm text-gray-500">{user.email}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="First name"
+                      value={formData.firstName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, firstName: e.target.value })
+                      }
+                      className="p-3 bg-gray-100 rounded-xl focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Last name"
+                      value={formData.lastName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, lastName: e.target.value })
+                      }
+                      className="p-3 bg-gray-100 rounded-xl focus:outline-none"
+                    />
+                  </div>
 
-              <input
-                type="email"
-                placeholder="you@email.com"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="mt-4 p-3 bg-gray-100 rounded-xl focus:outline-none w-full"
-              />
+                  <input
+                    type="email"
+                    placeholder="you@email.com"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    className="mt-4 p-3 bg-gray-100 rounded-xl focus:outline-none w-full"
+                  />
+                </>
+              )}
 
               <button
                 onClick={handlePay}
