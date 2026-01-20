@@ -80,6 +80,16 @@ export const userEventsApiSlice = apiSlice.injectEndpoints({
       transformResponse: (response) => response?.events || [],
     }),
 
+    getEventsByInterests: builder.query({
+      query: (limit = 20) => ({
+        url: `${USER_EVENTS_URL}/interests?limit=${limit}`,
+        method: "GET",
+      }),
+      providesTags: ["EventsByInterests"],
+      keepUnusedDataFor: 300,
+      transformResponse: (response) => response?.events || [],
+    }),
+
     addFavoriteEvent: builder.mutation({
       query: ({ eventId }) => ({
         url: `${USER_EVENTS_URL}/favorites/events`,
@@ -122,6 +132,7 @@ export const {
   useGetUserEventDetailsQuery,
   useGetRecommendedEventsQuery,
   useGetTrendingEventsQuery,
+  useGetEventsByInterestsQuery,
   useAddFavoriteEventMutation,
   useRemoveFavoriteEventMutation,
   useAddFavoriteOrganizerMutation,
