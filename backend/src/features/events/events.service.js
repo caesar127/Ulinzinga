@@ -2,6 +2,7 @@ import axios from "axios";
 import mongoose from "mongoose";
 import Event from "./events.model.js";
 import EventCategory from "../category/category.model.js";
+import { syncTicketPackagesForEvent } from "../tickets/ticketPackage.service.js";
 import { PAGINATION, SORT_OPTIONS } from "../../core/utils/constants.js";
 
 const BASE_URL = "https://dashboard.paychangu.com/mobile/api/public";
@@ -657,128 +658,52 @@ export const deleteEventService = async (eventId) => {
 
 export const searchEventsService = async (queryParams = {}) => {
   try {
-    const {
-      q: searchTerm,
-      category,
-      organizer,
-      tags,
-      limit = 20,
-      page = 1,
-    } = queryParams;
+    const { q: searchTerm } = queryParams;
 
-    if (!searchTerm && !category && !organizer && !tags) {
-      throw new Error("At least one search parameter is required");
+    if (!searchTerm) {
+      throw new Error("Search term is required");
     }
 
-    let searchQuery = { visible: true, isActive: true };
-    let textSearchConditions = [];
+    const searchRegex = new RegExp(searchTerm.trim(), "i");
+    const searchQuery = {
+      visible: true,
+      isActive: true,
+      $or: [
+        { title: searchRegex },
+        { description: searchRegex },
+        { "venue.name": searchRegex },
+        { "merchant.name": searchRegex },
+        { tags: { $elemMatch: { $regex: searchRegex } } },
+      ],
+    };
 
-    // Build search conditions for database fields only
-    if (searchTerm) {
-      const searchRegex = new RegExp(searchTerm.trim(), "i");
-      textSearchConditions.push(
-        { slug: searchRegex },
-        { tags: { $in: [searchRegex] } }
-      );
-    }
-
-    if (category) {
-      const categoryDoc = await EventCategory.findOne({
-        $or: [{ name: new RegExp(category, "i") }],
-      });
-      if (categoryDoc) {
-        searchQuery.interests = categoryDoc._id;
-      }
-    }
-
-    if (tags) {
-      const tagArray = Array.isArray(tags) ? tags : [tags];
-      searchQuery.tags = { $in: tagArray.map((tag) => new RegExp(tag, "i")) };
-    }
-
-    if (textSearchConditions.length > 0) {
-      searchQuery.$or = textSearchConditions;
-    }
-
-    const skip = (page - 1) * limit;
     const localEvents = await Event.find(searchQuery)
       .populate("interests", "name")
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
       .exec();
 
     if (!localEvents.length) {
-      return { events: [], total: 0, page, limit };
+      return { events: [], total: 0 };
     }
 
-    // Fetch external data for found events
-    const eventSlugs = localEvents
-      .filter((event) => event.slug)
-      .map((event) => event.slug);
-    const externalEventPromises = eventSlugs.map(async (slug) => {
-      try {
-        const options = {
-          method: "GET",
-          url: `${BASE_URL}/events/${slug}`,
-          headers: AUTH_HEADER,
-        };
-        const { data } = await axios.request(options);
-        return { slug, externalData: data.data };
-      } catch {
-        return { slug, externalData: null };
-      }
-    });
-
-    const externalResults = await Promise.all(externalEventPromises);
-
-    // Merge local and external data
-    const mergedEvents = localEvents.map((localEvent) => {
-      const externalResult = externalResults.find(
-        (result) => result.slug === localEvent.slug
-      );
-      const externalData = externalResult?.externalData;
-
-      if (externalData) {
-        return {
-          ...localEvent.toObject(),
-          ...externalData,
-          description: stripHtml(externalData.description),
-        };
-      }
-      return localEvent.toObject();
-    });
-
-    // Apply text search filters on merged data
-    let filteredEvents = mergedEvents;
-    if (searchTerm || organizer) {
-      const searchLower = searchTerm ? searchTerm.toLowerCase() : "";
-      const organizerLower = organizer ? organizer.toLowerCase() : "";
-
-      const filteredEvents = processedEvents.filter((event) => {
-        const searchableText = [
-          event.title,
-          event.description,
-          event.venue,
-          event.organizer,
-          event.merchant?.name,
-          ...(event.tags || []),
-          ...(event.interests?.map((i) => i.name) || []),
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        return searchableText.includes(searchLower);
-      });
-    }
+    const processedEvents = localEvents.map((e) => ({
+      ...e.toObject(),
+      description: stripHtml(e.description || ""),
+      externalApiStatus: "local",
+    }));
 
     return {
-      events: filteredEvents,
-      total: filteredEvents.length,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(filteredEvents.length / limit),
+      events: processedEvents,
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalCount: processedEvents.length,
+        limit: processedEvents.length,
+        hasNextPage: false,
+        hasPrevPage: false,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      },
     };
   } catch (error) {
     throw error;

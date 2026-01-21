@@ -13,7 +13,6 @@ import {
 
 export const getAllEvents = async (req, res) => {
   try {
-    console.log("Query Params:", req.query);
     const queryParams = req.query;
     const result = await getAllEventsService(queryParams);
     return res.status(200).json({
@@ -93,17 +92,31 @@ export const initiatePurchase = async (req, res) => {
       coupon_code,
       redirect_url,
       cancel_url,
-      // Gift ticket specific fields
       isGift,
       recipientName,
       recipientEmail,
       giftMessage,
     } = req.body;
 
-    if (!package_id || !name || !email || !quantity) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing required fields" });
+    const requiredFields = {
+      package_id,
+      name,
+      email,
+      quantity,
+    };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(
+        ([_, value]) => value === undefined || value === null || value === ""
+      )
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+        missingFields,
+      });
     }
 
     const purchaseData = {
@@ -120,7 +133,7 @@ export const initiatePurchase = async (req, res) => {
       recipientEmail: recipientEmail || null,
       giftMessage: giftMessage || null,
     };
-
+    
     const result = await purchaseTicket(purchaseData);
 
     res.status(200).json(result);
@@ -216,17 +229,12 @@ export const searchEvents = async (req, res) => {
   try {
     const queryParams = req.query;
     const result = await searchEventsService(queryParams);
-    
+
     return res.status(200).json({
       status: "success",
       message: "Events search completed successfully",
       data: result.events,
-      pagination: {
-        currentPage: result.page,
-        totalPages: result.totalPages,
-        totalCount: result.total,
-        limit: result.limit,
-      },
+      pagination: result.pagination,
     });
   } catch (error) {
     return res.status(error.response?.status || 500).json({
