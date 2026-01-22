@@ -2,6 +2,10 @@ import { apiSlice } from "../../api/apiSlice";
 const USER_URL = "/api/user/users";
 export const usersApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    getUsers: builder.query({
+      query: () => `${USER_URL}?role=user`,
+      providesTags: ["User"],
+    }),
     getUserById: builder.query({
       query: (userId) => `${USER_URL}/${userId}`,
       providesTags: ["User"],
@@ -42,6 +46,7 @@ export const usersApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
+  useGetUsersQuery,
   useGetUserByIdQuery,
   useUpdateUserProfileMutation,
   useUploadProfilePictureMutation,
