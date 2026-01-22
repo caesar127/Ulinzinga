@@ -65,6 +65,15 @@ export const getAllEventsService = async (queryParams = {}) => {
     if (queryParams.search)
       filter.$text = { $search: queryParams.search.trim() };
 
+    if (queryParams.category) {
+      const category = await EventCategory.findOne({
+        name: queryParams.category,
+      });
+      if (category) {
+        filter.interests = { $in: [category._id] };
+      }
+    }
+
     const totalCount = await Event.countDocuments(filter);
     const events = await Event.find(filter)
       .sort({ [sortBy]: sortOrder })
@@ -660,24 +669,49 @@ export const searchEventsService = async (queryParams = {}) => {
   try {
     const { q: searchTerm } = queryParams;
 
-    if (!searchTerm) {
-      throw new Error("Search term is required");
-    }
+    const filter = {};
 
-    const searchRegex = new RegExp(searchTerm.trim(), "i");
-    const searchQuery = {
-      visible: true,
-      isActive: true,
-      $or: [
+    if (searchTerm && searchTerm.trim()) {
+      const searchRegex = new RegExp(searchTerm.trim(), "i");
+      filter.$or = [
         { title: searchRegex },
         { description: searchRegex },
         { "venue.name": searchRegex },
         { "merchant.name": searchRegex },
         { tags: { $elemMatch: { $regex: searchRegex } } },
-      ],
-    };
+      ];
+    }
 
-    const localEvents = await Event.find(searchQuery)
+    if (queryParams.visible !== undefined)
+      filter.visible = queryParams.visible === "true";
+    if (queryParams.isActive !== undefined)
+      filter.isActive = queryParams.isActive === "true";
+
+    const dateFilter = {};
+    if (queryParams.isPast !== undefined) {
+      dateFilter[queryParams.isPast === "true" ? "$lt" : "$gte"] = new Date();
+    }
+    if (queryParams.startDate)
+      dateFilter.$gte = new Date(queryParams.startDate);
+    if (queryParams.endDate) dateFilter.$lte = new Date(queryParams.endDate);
+    if (queryParams.onDate) {
+      const d = new Date(queryParams.onDate);
+      dateFilter.$gte = new Date(d.setHours(0, 0, 0, 0));
+      dateFilter.$lte = new Date(d.setHours(23, 59, 59, 999));
+    }
+    if (Object.keys(dateFilter).length) filter.end_date = dateFilter;
+
+    if (queryParams.category) {
+      const category = await EventCategory.findOne({
+        name: queryParams.category,
+      });
+
+      if (category) {
+        filter.interests = { $in: [category._id] };
+      }
+    }
+
+    const localEvents = await Event.find(filter)
       .populate("interests", "name")
       .sort({ createdAt: -1 })
       .exec();
