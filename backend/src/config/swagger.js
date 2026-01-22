@@ -1318,6 +1318,12 @@ const openApiSpec = {
             schema: { type: "string", format: "date" },
             description: "Filter events happening on specific date (ISO 8601)",
           },
+          {
+            in: "query",
+            name: "category",
+            schema: { type: "string" },
+            description: "Filter events by category name",
+          },
         ],
         responses: {
           200: {
