@@ -3,11 +3,9 @@ import { Link } from "react-router-dom";
 import filtericon from "../assets/icons/filtericon.svg";
 import { useGetCategoriesQuery } from "../features/category/categoryApiSlice";
 
-function EventsFilterBar() {
+function EventsFilterBar({ selectedType, setSelectedType, selectedCategory, setSelectedCategory }) {
   const { data: categoryData, isLoading } = useGetCategoriesQuery();
   const categories = categoryData?.categories || categoryData || [];
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedType, setSelectedType] = useState("recent");
 
   return (
     <div className="flex justify-between items-center">
@@ -18,6 +16,8 @@ function EventsFilterBar() {
           onChange={(e) => setSelectedType(e.target.value)}
           className="appearance-none w-full bg-white border border-[#ACACAC] rounded-lg py-3 px-5 text-sm pr-10 focus:outline-none focus:ring-0 focus:ring-[#FFB300]"
         >
+          <option value="upcoming">Upcoming</option>
+          <option value="past">Past Events</option>
           <option value="recent">Recent</option>
           <option value="trending">Trending</option>
           <option value="recommended">Recommended</option>
@@ -40,17 +40,26 @@ function EventsFilterBar() {
         </div>
       </div>
 
-      {/* Tabs / Links */}
+      {/* Tabs / Buttons */}
       <ul className="flex space-x-4 text-sm w-full overflow-x-auto whitespace-nowrap items-center mx-8 scrollbar-hide">
-        {categories.map((cat, index) => (
-          <Link
+        <button
+          onClick={() => setSelectedCategory("")}
+          className={`inline-block px-5 py-3 rounded-full ${
+            selectedCategory === "" ? "bg-black text-white" : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          All
+        </button>
+        {categories.map((cat) => (
+          <button
             key={cat.categoryId}
+            onClick={() => setSelectedCategory(cat.name)}
             className={`inline-block px-5 py-3 rounded-full ${
-              index === 0 ? "bg-black text-white" : "bg-gray-100 text-gray-700"
+              selectedCategory === cat.name ? "bg-black text-white" : "bg-gray-100 text-gray-700"
             }`}
           >
             {cat.name}
-          </Link>
+          </button>
         ))}
       </ul>
 
