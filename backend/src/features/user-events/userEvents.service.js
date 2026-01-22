@@ -9,7 +9,6 @@ export const getRecommendedEventsService = async (userId, queryParams = {}) => {
   if (!user) throw new Error("User not found");
 
   const interests = user.interests || [];
-  console.log("User interests:", interests);
 
   const page = Math.max(1, parseInt(queryParams.page) || 1);
   const limit = Math.max(
@@ -72,16 +71,6 @@ export const getRecommendedEventsService = async (userId, queryParams = {}) => {
     visible: true,
     interests: { $in: interests },
   });
-
-  console.log(
-    "Recommended events (scored):",
-    events.map((e) => ({
-      id: e._id,
-      title: e.title,
-      score: e.score,
-      interestMatchCount: e.interestMatchCount,
-    }))
-  );
 
   return {
     events,
