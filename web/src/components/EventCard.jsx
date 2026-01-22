@@ -71,7 +71,7 @@ function EventCard({ event }) {
           <span className="text-[#ACACAC] text-2xl font-[200]">|</span>
           <motion.div whileHover="hover" whileTap="tap">
             <Link
-              to="/eventdetails"
+              to={`/eventdetails`}
               onClick={() => {
                 dispatch(setSelectedEvent(event));
                 window.scrollTo({ top: 0, behavior: "smooth" });
