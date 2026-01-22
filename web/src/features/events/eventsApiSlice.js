@@ -29,6 +29,30 @@ export const eventsApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    searchEvents: builder.query({
+      query: (params) => ({
+        url: `${EVENT_URL}/search`,
+        params,
+      }),
+      providesTags: ["Event"],
+      transformResponse: (response) => {
+        console.log("Search response:", response);
+        return {
+          events: response?.data || [],
+          pagination: response?.pagination || {
+            currentPage: 1,
+            totalPages: 1,
+            totalCount: 0,
+            limit: 20,
+            hasNextPage: false,
+            hasPrevPage: false,
+            sortBy: "createdAt",
+            sortOrder: "desc",
+          },
+        };
+      },
+    }),
+
     getEventById: builder.query({
       query: (id) => ({
         url: `${EVENT_URL}/${id}`,
@@ -78,6 +102,8 @@ export const eventsApiSlice = apiSlice.injectEndpoints({
 export const {
   useGetEventsQuery,
   useLazyGetEventsQuery,
+  useSearchEventsQuery,
+  useLazySearchEventsQuery,
   useGetEventByIdQuery,
   usePurchaseTicketMutation,
   useGiftTicketMutation,
