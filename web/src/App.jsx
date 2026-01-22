@@ -21,6 +21,7 @@ import EmptyLayout from "./shared/layout/EmptyLayout";
 import MainLayout from "./shared/layout/MainLayout";
 import EventDetailsPage from "./pages/EventDetailsPage";
 import TicketPurchaseRedirectPage from "./pages/TicketPurchaseRedirectPage";
+import TicketPurchaseCancelPage from "./pages/TicketPurchaseCancelPage";
 import WalletPage from "./pages/WalletPage";
 import PaymentRedirectPage from "./pages/PaymentRedirectPage";
 
@@ -52,6 +53,10 @@ function App() {
           <Route
             path="/ticketpurchase"
             element={<TicketPurchaseRedirectPage />}
+          />
+          <Route
+            path="/ticketpurchasecancel"
+            element={<TicketPurchaseCancelPage />}
           />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/gallery" element={<GalleryPage />} />
