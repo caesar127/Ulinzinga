@@ -201,7 +201,7 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="relative rounded-2xl w-full lg:w-[55%] overflow-hidden">
+          <div className="relative rounded-2xl w-full lg:w-[40%] overflow-hidden">
             <Swiper
               modules={[Autoplay, EffectFade]}
               effect="fade"
