@@ -67,7 +67,7 @@ export const verifyMerchantToken = async (req, res) => {
     );
 
     const { data } = userResponse.data;
-    console.log(data);
+    
     if (!data || !data.user || !data.user.email)
       return res
         .status(400)
