@@ -71,9 +71,9 @@ export default function ConnectionsSidebar({
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      {connection.avatar ? (
+                      {connection.picture ? (
                         <img
-                          src={connection.avatar}
+                          src={connection.picture}
                           className="h-12 w-12 rounded-full object-cover shadow-sm"
                         />
                       ) : (
@@ -132,9 +132,9 @@ export default function ConnectionsSidebar({
                       >
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <div className="relative">
-                            {request.user?.avatar ? (
+                            {request.user?.picture ? (
                               <img
-                                src={request.user.avatar}
+                                src={request.user.picture}
                                 className="h-12 w-12 rounded-full object-cover shadow"
                               />
                             ) : (
@@ -207,9 +207,9 @@ export default function ConnectionsSidebar({
                       >
                         <div className="flex items-center gap-4">
                           <div className="relative">
-                            {request.connection?.avatar ? (
+                            {request.connection?.picture ? (
                               <img
-                                src={request.connection.avatar}
+                                src={request.connection.picture}
                                 className="h-12 w-12 rounded-full object-cover shadow"
                               />
                             ) : (
@@ -277,9 +277,9 @@ export default function ConnectionsSidebar({
                       >
                         <div className="flex items-center gap-4">
                           <div className="relative">
-                            {user.avatar ? (
+                            {user.picture ? (
                               <img
-                                src={user.avatar}
+                                src={user.picture}
                                 className="h-12 w-12 rounded-full object-cover shadow"
                               />
                             ) : (
@@ -350,9 +350,9 @@ export default function ConnectionsSidebar({
                   >
                     <div className="relative w-fit mx-auto">
                       <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#FFB300] via-[#FFD95C] to-[#FFE9A7] p-[2px]" />
-                      {user?.avatar ? (
+                      {user?.picture ? (
                         <img
-                          src={user.avatar}
+                          src={user.picture}
                           className="h-20 w-20 rounded-full mx-auto object-cover relative z-10 border-4 border-white"
                         />
                       ) : (
