@@ -57,25 +57,52 @@ export const getUserConnections = async (userId) => {
   const connections = await Connection.find({
     $or: [{ user: userId }, { connection: userId }],
     status: "accepted",
-  }).populate("user connection", "name username email");
+  }).populate("user connection", "name username email profile");
 
-  return connections.map((conn) =>
-    conn.user._id.toString() === userObjectId ? conn.connection : conn.user
-  );
+  return connections.map((conn) => {
+    const user = conn.user._id.toString() === userObjectId ? conn.connection : conn.user;
+    const { profile, ...userData } = user.toObject();
+    return {
+      ...userData,
+      ...profile,
+    };
+  });
 };
 
 export const getPendingRequests = async (userId) => {
-  return Connection.find({
+  const requests = await Connection.find({
     connection: userId,
     status: "pending",
-  }).populate("user", "name email");
+  }).populate("user", "name email profile");
+
+  return requests.map((req) => {
+    const { profile, ...userData } = req.user.toObject();
+    return {
+      ...req.toObject(),
+      user: {
+        ...userData,
+        ...profile,
+      },
+    };
+  });
 };
 
 export const getSentRequests = async (userId) => {
-  return Connection.find({
+  const requests = await Connection.find({
     user: userId,
     status: "pending",
-  }).populate("connection", "name email");
+  }).populate("connection", "name email profile");
+
+  return requests.map((req) => {
+    const { profile, ...connectionData } = req.connection.toObject();
+    return {
+      ...req.toObject(),
+      connection: {
+        ...connectionData,
+        ...profile,
+      },
+    };
+  });
 };
 
 export const deleteConnection = async (id, userId) => {
@@ -165,8 +192,7 @@ export const getSuggestedConnectionsService = async (
       $project: {
         name: 1,
         email: 1,
-        picture: 1,
-        profile: 1,
+        picture: "$profile.picture",
         overlapCount: 1,
         interests: {
           _id: 1,
@@ -236,6 +262,11 @@ export const getAdvancedSuggestedConnectionsService = async (
 
     { $sort: { sharedInterests: -1 } },
     { $limit: limit },
-    { $project: { password: 0 } },
+    {
+      $project: {
+        password: 0,
+        picture: "$profile.picture",
+      },
+    },
   ]);
 };
