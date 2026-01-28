@@ -70,7 +70,7 @@ export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
   formData.append("projectName", "ulinzinga");
   formData.append("path", uniquePath);
 
-  const { body } = await request(`${process.env.STORAGE_URL}/storage/upload`, {
+  const { body, statusCode } = await request(`${process.env.STORAGE_URL}/storage/upload`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
@@ -78,7 +78,15 @@ export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
     body: formData,
   });
 
-  const uploadResult = await body.json();
+  let uploadResult;
+  try {
+    uploadResult = await body.json();
+  } catch (err) {
+    // If not JSON, log the response text for debugging
+    const text = await body.text();
+    console.error("Storage service returned non-JSON response:", text);
+    throw new Error(`Storage service error: ${statusCode} - ${text.substring(0, 200)}`);
+  }
 
   if (!uploadResult.success) throw new Error("File upload failed");
 
@@ -138,6 +146,40 @@ export const getPendingEventContent = async (eventId) => {
   })
     .sort({ createdAt: -1 })
     .populate("user", "name avatar");
+};
+
+export const getAllPendingContent = async (params = {}, page = 1, limit = 20) => {
+  const query = {
+    approvalStatus: "pending",
+  };
+
+  if (params.type) {
+    query['media.0.type'] = params.type;
+  }
+
+  const [content, totalCount] = await Promise.all([
+    Content.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate("user", "name avatar")
+      .populate("event", "title"),
+    Content.countDocuments(query),
+  ]);
+
+  const totalPages = Math.ceil(totalCount / limit);
+
+  return {
+    content,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalCount,
+      limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    },
+  };
 };
 
 export const approveContentItem = async (contentId, approverId) => {
@@ -201,9 +243,9 @@ export const deleteContentItemWithStorage = async (
 
 export const getGalleryContent = async (page = 1, limit = 20) => {
   const query = {
-    // visibilityScope: "event",
-    // privacy: "public",
-    // approvalStatus: "approved",
+    visibilityScope: "event",
+    privacy: "public",
+    approvalStatus: "approved",
   };
 
   const [content, totalCount] = await Promise.all([
