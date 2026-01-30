@@ -7,6 +7,7 @@ import {
   fetchVault,
   fetchGalleryContent,
   fetchPendingContent,
+  fetchAllPendingContent,
   approveContent,
   rejectContent,
   deleteContent,
@@ -28,6 +29,7 @@ router.get("/user/:userId", fetchUserContent);
 router.get("/vault", verifyToken, fetchVault);
 
 router.get("/pending/:eventId", verifyToken, fetchPendingContent);
+router.get("/pending", verifyToken, fetchAllPendingContent);
 
 router.post("/approve/:contentId", verifyToken, approveContent);
 router.post("/reject/:contentId", verifyToken, rejectContent);
