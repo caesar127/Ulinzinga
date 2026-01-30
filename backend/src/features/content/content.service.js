@@ -70,7 +70,7 @@ export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
   formData.append("projectName", "ulinzinga");
   formData.append("path", uniquePath);
 
-  const { body, statusCode } = await request(`${process.env.STORAGE_URL}/storage/upload`, {
+  const { body } = await request(`${process.env.STORAGE_URL}/storage/upload`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
@@ -78,15 +78,7 @@ export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
     body: formData,
   });
 
-  let uploadResult;
-  try {
-    uploadResult = await body.json();
-  } catch (err) {
-    // If not JSON, log the response text for debugging
-    const text = await body.text();
-    console.error("Storage service returned non-JSON response:", text);
-    throw new Error(`Storage service error: ${statusCode} - ${text.substring(0, 200)}`);
-  }
+  const uploadResult = await body.json();
 
   if (!uploadResult.success) throw new Error("File upload failed");
 
