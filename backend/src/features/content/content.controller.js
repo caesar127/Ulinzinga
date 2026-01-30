@@ -150,6 +150,24 @@ export const fetchPendingContent = async (req, res) => {
   res.json({ success: true, data });
 };
 
+export const fetchAllPendingContent = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const params = req.query;
+
+    const result = await getAllPendingContent(params, page, limit);
+
+    res.json({
+      success: true,
+      data: result.content,
+      pagination: result.pagination,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export const checkEventUploadAccess = async (req, res) => {
   try {
     const { eventId } = req.params;
