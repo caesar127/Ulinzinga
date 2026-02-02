@@ -16,7 +16,12 @@ import {
 import { verifyToken } from "../../core/middleware/auth.middleware.js";
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024,
+  },
+});
 
 router.post("/upload", verifyToken, upload.array("files", 10), uploadContent);
 
