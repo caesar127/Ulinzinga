@@ -14,11 +14,10 @@ export const verifyUserTicketForEvent = async (userEmail, eventIdentifier) => {
   if (!userEmail)
     throw new AppError("User email is required to verify event tickets", 400);
 
-  if (!eventIdentifier)
-    throw new AppError("Event ID or slug is required", 400);
+  if (!eventIdentifier) throw new AppError("Event ID or slug is required", 400);
 
   const event = await Event.findOne({ slug: eventIdentifier }).select(
-    "eventId slug title"
+    "eventId slug title",
   );
 
   if (!event) throw new AppError("Event not found", 404);
@@ -61,28 +60,76 @@ export const createContentItem = async ({
 };
 
 export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
-  const timestamp = Date.now();
-  const randomString = Math.random().toString(36).substring(2, 15);
-  const uniquePath = `content/${timestamp}-${randomString}-${filename}`;
+  console.log("🚀 uploadToStorage: start");
 
-  const formData = new FormData();
-  formData.append("file", new File([fileBuffer], filename, { type: mimetype }));
-  formData.append("projectName", "ulinzinga");
-  formData.append("path", uniquePath);
+  try {
+    // 1. Generate path
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 15);
+    const uniquePath = `content/${timestamp}-${randomString}-${filename}`;
 
-  const { body } = await request(`${process.env.STORAGE_URL}/storage/upload`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
-    },
-    body: formData,
-  });
+    console.log("📁 Generated storage path:", uniquePath);
+    console.log("📄 File meta:", {
+      filename,
+      mimetype,
+      size: fileBuffer?.length,
+    });
 
-  const uploadResult = await body.json();
+    // 2. Prepare form data
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new File([fileBuffer], filename, { type: mimetype }),
+    );
+    formData.append("projectName", "ulinzinga");
+    formData.append("path", uniquePath);
 
-  if (!uploadResult.success) throw new Error("File upload failed");
+    console.log("🧩 FormData prepared", {
+      projectName: "ulinzinga",
+      path: uniquePath,
+    });
 
-  return uploadResult.data;
+    // 3. Send request
+    const uploadUrl = `${process.env.STORAGE_URL}/storage/upload`;
+    console.log("🌐 Uploading to storage service:", uploadUrl);
+
+    const response = await request(uploadUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
+      },
+      body: formData,
+    });
+
+    console.log("📡 Storage service responded:", {
+      status: response.statusCode,
+      headers: response.headers,
+    });
+
+    // 4. Parse response
+    const uploadResult = await response.body.json();
+    console.log("📦 Upload result:", uploadResult);
+
+    // 5. Handle failure
+    if (!uploadResult.success) {
+      console.error("❌ Storage upload failed:", uploadResult);
+      throw new Error(
+        uploadResult.message || "File upload failed at storage service",
+      );
+    }
+
+    // 6. Success
+    console.log("✅ File uploaded successfully:", uploadResult.data);
+
+    return uploadResult.data;
+  } catch (error) {
+    console.error("🔥 uploadToStorage error:", {
+      message: error.message,
+      stack: error.stack,
+    });
+
+    throw error; // important: let caller handle it
+  }
 };
 
 export const getEventContent = async (eventId, page = 1, limit = 20) => {
@@ -102,7 +149,7 @@ export const getUserContent = async (
   viewerId,
   ownerId,
   page = 1,
-  limit = 20
+  limit = 20,
 ) => {
   const query = {
     user: ownerId,
@@ -140,13 +187,17 @@ export const getPendingEventContent = async (eventId) => {
     .populate("user", "name avatar");
 };
 
-export const getAllPendingContent = async (params = {}, page = 1, limit = 20) => {
+export const getAllPendingContent = async (
+  params = {},
+  page = 1,
+  limit = 20,
+) => {
   const query = {
     approvalStatus: "pending",
   };
 
   if (params.type) {
-    query['media.0.type'] = params.type;
+    query["media.0.type"] = params.type;
   }
 
   const [content, totalCount] = await Promise.all([
@@ -182,14 +233,14 @@ export const approveContentItem = async (contentId, approverId) => {
       approvedBy: approverId,
       approvedAt: new Date(),
     },
-    { new: true }
+    { new: true },
   );
 };
 
 export const rejectContentItem = async (
   contentId,
   approverId,
-  reason = null
+  reason = null,
 ) => {
   return Content.findByIdAndUpdate(
     contentId,
@@ -199,14 +250,14 @@ export const rejectContentItem = async (
       approvedAt: new Date(),
       rejectionReason: reason,
     },
-    { new: true }
+    { new: true },
   );
 };
 
 export const deleteContentItemWithStorage = async (
   contentId,
   userId,
-  isAdmin = false
+  isAdmin = false,
 ) => {
   const item = await Content.findById(contentId);
   if (!item) throw new Error("Content item not found");
@@ -224,7 +275,7 @@ export const deleteContentItemWithStorage = async (
           headers: {
             Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
           },
-        }
+        },
       );
     }
   }
@@ -265,7 +316,12 @@ export const getGalleryContent = async (page = 1, limit = 20) => {
   };
 };
 
-export const fetchUserContentService = async (userId, viewerId, page = 1, limit = 20) => {
+export const fetchUserContentService = async (
+  userId,
+  viewerId,
+  page = 1,
+  limit = 20,
+) => {
   const ownerId = userId;
 
   const query = {
