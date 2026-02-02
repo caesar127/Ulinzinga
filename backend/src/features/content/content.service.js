@@ -60,22 +60,11 @@ export const createContentItem = async ({
 };
 
 export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
-  console.log("🚀 uploadToStorage: start");
-
   try {
-    // 1. Generate path
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
     const uniquePath = `content/${timestamp}-${randomString}-${filename}`;
 
-    console.log("📁 Generated storage path:", uniquePath);
-    console.log("📄 File meta:", {
-      filename,
-      mimetype,
-      size: fileBuffer?.length,
-    });
-
-    // 2. Prepare form data
     const formData = new FormData();
     formData.append(
       "file",
@@ -84,42 +73,20 @@ export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
     formData.append("projectName", "ulinzinga");
     formData.append("path", uniquePath);
 
-    console.log("🧩 FormData prepared", {
-      projectName: "ulinzinga",
-      path: uniquePath,
-    });
-
-    // 3. Send request
-    const uploadUrl = `${process.env.STORAGE_URL}/storage/upload`;
-    console.log("🌐 Uploading to storage service:", uploadUrl);
-
-    const response = await request(uploadUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
+    const { body } = await request(
+      `${process.env.STORAGE_URL}/storage/upload`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.STORAGE_SECRET}`,
+        },
+        body: formData,
       },
-      body: formData,
-    });
+    );
 
-    console.log("📡 Storage service responded:", {
-      status: response.statusCode,
-      headers: response.headers,
-    });
+    const uploadResult = await body.json();
 
-    // 4. Parse response
-    const uploadResult = await response.body.json();
-    console.log("📦 Upload result:", uploadResult);
-
-    // 5. Handle failure
-    if (!uploadResult.success) {
-      console.error("❌ Storage upload failed:", uploadResult);
-      throw new Error(
-        uploadResult.message || "File upload failed at storage service",
-      );
-    }
-
-    // 6. Success
-    console.log("✅ File uploaded successfully:", uploadResult.data);
+    if (!uploadResult.success) throw new Error("File upload failed");
 
     return uploadResult.data;
   } catch (error) {
@@ -127,8 +94,7 @@ export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
       message: error.message,
       stack: error.stack,
     });
-
-    throw error; // important: let caller handle it
+    throw error;
   }
 };
 
