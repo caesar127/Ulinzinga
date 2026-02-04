@@ -15,10 +15,10 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit for profile pictures
+    fileSize: 100 * 1024 * 1024, // 100MB limit for profile pictures
   },
 });
 
 export const uploadSingle = (field) => upload.single(field);
-export const uploadMultiple = (field, max = 5) => upload.array(field, max);
+export const uploadMultiple = (field, max = 10) => upload.array(field, max);
 export const uploadFields = (fields) => upload.fields(fields);
