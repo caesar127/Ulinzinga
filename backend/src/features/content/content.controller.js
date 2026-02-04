@@ -14,78 +14,44 @@ import {
 } from "./content.service.js";
 
 export const uploadContent = async (req, res) => {
-  console.log("📥 uploadContent: request received");
-
   try {
-    console.log("🧾 req.body:", req.body);
-    console.log("👤 req.user:", req.user);
-    console.log("📂 req.files count:", req.files?.length || 0);
-
     const { visibilityScope, privacy, caption, eventId } = req.body;
-
-    // 1. Validate files
+    
     if (!req.files || req.files.length === 0) {
-      console.log("❌ No files provided");
       return res.status(400).json({ message: "At least one file is required" });
     }
 
     let resolvedEventId = null;
-
-    // 2. Handle event-scoped uploads
+    
     if (visibilityScope === "event") {
-      console.log("🎫 Visibility scope: EVENT");
-
       if (!eventId) {
-        console.log("❌ eventId missing for event upload");
         return res.status(400).json({
           message: "eventId is required for event content uploads",
         });
       }
-
-      console.log("🔍 Verifying ticket for event:", eventId);
 
       const { hasTicket, event } = await verifyUserTicketForEvent(
         req.user.email,
         eventId,
       );
 
-      console.log("🎟 Ticket check result:", {
-        hasTicket,
-        eventId: event?._id,
-      });
-
       if (!hasTicket) {
-        console.log("⛔ User has no paid ticket");
         return res.status(403).json({
           message: "A paid ticket is required to upload for this event",
         });
       }
-
       resolvedEventId = event._id;
-      console.log("✅ Event resolved:", resolvedEventId);
     }
-
-    // 3. Upload media
+    
     const media = [];
-    console.log("⬆️ Starting media upload...");
-
-    for (const [index, file] of req.files.entries()) {
-      console.log(`📤 Uploading file ${index + 1}/${req.files.length}`, {
-        name: file.originalname,
-        type: file.mimetype,
-        size: file.size,
-      });
-
+    for (const file of req.files) {
       const uploadData = await uploadToStorage(
         file.buffer,
         file.originalname,
         file.mimetype,
       );
 
-      console.log("✅ Upload success:", uploadData);
-
       const type = uploadData.mimetype.startsWith("video") ? "video" : "image";
-
       media.push({
         type,
         url: uploadData.url,
@@ -96,12 +62,7 @@ export const uploadContent = async (req, res) => {
         },
       });
     }
-
-    console.log("🖼 Media prepared:", media);
-
-    // 4. Create content item
-    console.log("📝 Creating content item...");
-
+    
     const contentItem = await createContentItem({
       userId: req.user.userId || req.user.id,
       eventId: resolvedEventId,
@@ -111,18 +72,10 @@ export const uploadContent = async (req, res) => {
       privacy,
     });
 
-    console.log("🎉 Content created:", contentItem._id);
-
-    // 5. Respond
     res.status(201).json({ success: true, data: contentItem });
   } catch (err) {
-    console.error("🔥 uploadContent error:", err);
-
     const status = err.statusCode || 500;
-    res.status(status).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(status).json({ success: false, message: err.message });
   }
 };
 

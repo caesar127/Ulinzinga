@@ -14,16 +14,11 @@ import {
   checkEventUploadAccess,
 } from "./content.controller.js";
 import { verifyToken } from "../../core/middleware/auth.middleware.js";
+import { uploadMultiple } from "../../core/middleware/upload.middleware.js";
 
 const router = express.Router();
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 100 * 1024 * 1024,
-  },
-});
 
-router.post("/upload", verifyToken, upload.array("files", 10), uploadContent);
+router.post("/upload", verifyToken, uploadMultiple("files", 10), uploadContent);
 
 router.get("/event/:eventId/access", verifyToken, checkEventUploadAccess);
 router.get("/event/:eventId", fetchEventContent);

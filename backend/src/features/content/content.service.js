@@ -90,10 +90,6 @@ export const uploadToStorage = async (fileBuffer, filename, mimetype) => {
 
     return uploadResult.data;
   } catch (error) {
-    console.error("🔥 uploadToStorage error:", {
-      message: error.message,
-      stack: error.stack,
-    });
     throw error;
   }
 };
